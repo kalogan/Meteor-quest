@@ -2,12 +2,16 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
-## Last known-green gate
-- After the parallel fan-out integration. `bash scripts/gate.sh` GREEN.
-- Counts: shared **13** · sim-core **50** · client **2** = **65 passing**. Product + preview build OK.
-- Runtime smoke (headless Chromium, alt ports 4173/4174): game + preview both render,
-  WebGL OK, console clean except a benign favicon 404 (now silenced). Sim ticks live
-  (economy accrues, tech-tree gating correct, city-tier focus panel shows as designed).
+## Last known-green gate (after Slice 2)
+- `bash scripts/gate.sh` GREEN. Counts: shared **13** · sim-core **78** · client **2**
+  = **93 passing**. Product + preview build OK.
+- Slice-2 runtime smoke (headless): game runs, **save/load round-trip RESUMES** (ran
+  to tick 31, autosave@30, reload resumed→40, not reset), galaxy generated **7 systems**,
+  console CLEAN. Galaxy-tier tech (Galactic Senate) present.
+- BOUNDARY: the *visible* galaxy map / telegraphed threats / defense shields / tactical
+  view need mid/late-game state (discovered systems, post-launch threats, built defenses)
+  a quick headless smoke can't reach — they compile/build/run clean and are unit-tested
+  in sim-core, but their visual feel is a Director playtest item.
 
 ## Slices
 | # | Slice | State |
@@ -19,10 +23,27 @@ _Update every slice. A cold context should be able to resume from this file._
 | 5 | Client: God-view + continuous zoom | ✅ done (CameraControls rig, low-poly, fog) |
 | 6 | Client: HUD + tier-control panels | ✅ done (tier-adaptive control) |
 | 7 | Preview harness (expand) | ✅ done (World/Biomes/Tech modes, seed knob, freeze, static index.html) |
+| **S2** | **Slice 2 — "Beyond the cradle system"** | |
+| 8 | Contract seams (galaxy/defense/galaxy-tier) | ✅ done (additive, green-safe) |
+| 9 | Sim-core: galaxy gen + system/galaxy tiers + defenses + tactical | ✅ done (78 sim tests) |
+| 10 | Content: galaxy + defense config + galaxy-tier tech | ✅ done (16 tech, Galactic Senate) |
+| 11 | Client: galaxy map + tactical view | ✅ done (zoom band, threat telegraph, shields) |
+| 12 | Client: galaxy/system/empire + defense + tactical UI | ✅ done |
+| 13 | Save/load persistence (autosave) | ✅ done (verified round-trip) |
 
-## ALL 7 SLICES COMPLETE — slice verified end-to-end
-- Full gate GREEN, 65 tests. Runtime smoke (game + preview, incl. new biome gallery
-  mounting the real PlanetView) console-clean. Static preview emits `dist-preview/index.html`.
+## ALL SLICES (1 + 2) COMPLETE — verified green
+- Slice 1: full gate GREEN, 65 tests, biome gallery smoke clean.
+- Slice 2: full gate GREEN, **93 tests**, save/load + 7-system galaxy smoke clean.
+
+## Slice-2 review queue (Director taste)
+- **Defense balance:** `defensePerBuild=5`, `buildCost {alloy:10,energy:10}`, `fortify ×1.75`
+  — a couple of builds decisively flips a frontier meteor; tune pricing/strength.
+- **Galaxy camera feel:** galaxy-band framing distance (120u) / threat approach reach (16u)
+  / defense-shield intensity (0.35) all tuned blind vs the real ~47u galaxy radius.
+- **Threat identity:** per-kind tints are placeholder; may want distinct silhouettes.
+- **Cleanup:** `src/ui/EventPrompts.tsx` is now orphaned (superseded by TacticalPanel) —
+  delete when convenient.
+- **Galaxy minSeparation:** content authored 40 vs sim default 45 (content wins) — confirm.
 
 ## Vertical slice status: PLAYABLE
 The 3-in-1 arc is wired end-to-end: city-tier micro → research toward continent/planet
