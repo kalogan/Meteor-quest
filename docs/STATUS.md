@@ -2,6 +2,17 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Intro: orbit + mining-probe beat (task #26) — done, verified
+- Extended the cinematic: after the fly-in the ship settles into orbit, then deploys a
+  low-poly mining probe (antenna/dish + pulsing mining beam + resource chunks rising
+  from the surface) — two new steps (Enter orbit / Deploy the mining probe), 6 total,
+  before Begin. Stage derived from the active step; cosmetic; reduced-motion + mobile.
+- Architect smoke caught + fixed: (1) the Begin button hover #3672ff was 4.19:1 with
+  white (axe serious) → #2f66ea (~5:1); (2) the centered card hid the mining action →
+  docked the intro card to the bottom so the probe/beam stay visible above it.
+- Re-verified: 6 steps → orbit/mining render (probe + beam visible) → Begin → playing;
+  axe 0 violations; console CLEAN; mobile card on-screen. Gate GREEN.
+
 ## Cinematic intro (task #25) — done, verified
 - Replaced the off-screen-on-mobile onboarding dialog with a cinematic: fade from
   black → a ship emerges and flies toward the real cradle planet → stepped onboarding

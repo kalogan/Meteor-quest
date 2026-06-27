@@ -46,14 +46,16 @@
   opacity: 0;
 }
 
-/* Centering frame for the card — pointer-events only on the card itself. */
+/* Frame for the card — docked toward the BOTTOM so the cinematic above (ship fly-in,
+   orbit, and the mining probe at work) stays visible while the card is shown.
+   pointer-events only on the card itself. */
 .intro-overlay {
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  padding: 24px;
+  padding: 24px 24px clamp(24px, 6vh, 56px);
   pointer-events: none;
   z-index: 3;
 }
@@ -137,7 +139,9 @@
   border: 1px solid var(--intro-accent-border);
 }
 .intro-btn--primary:hover {
-  background: #3672ff;
+  /* #3672ff was only 4.19:1 with white text (below AA 4.5). #2f66ea keeps a hover
+     brighten while staying ~5:1. */
+  background: #2f66ea;
 }
 
 .intro-btn--ghost {
