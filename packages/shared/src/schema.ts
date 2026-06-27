@@ -77,9 +77,17 @@ export function parseContentPack(raw: unknown): ContentPack {
   const pack = ContentPackSchema.parse(raw);
   const resourceIds = new Set(pack.resources.map((r) => r.id));
   const techIds = new Set(pack.tech.map((t) => t.id));
+  const techCategories = new Set<string>(TECH_CATEGORIES);
+  const uniqueResources = new Set(pack.biomes.map((b) => b.uniqueResource));
+
   for (const b of pack.biomes) {
     if (!resourceIds.has(b.uniqueResource)) {
       throw new Error(`biome ${b.id} references unknown resource ${b.uniqueResource}`);
+    }
+    // Spiff category must be a real TechCategory (zod enforces the enum; this guards
+    // against drift if the schema is ever loosened, and keeps the message specific).
+    if (!techCategories.has(b.spiff.category)) {
+      throw new Error(`biome ${b.id} spiff references unknown tech category ${b.spiff.category}`);
     }
   }
   for (const t of pack.tech) {
@@ -89,6 +97,50 @@ export function parseContentPack(raw: unknown): ContentPack {
     if (t.requiredResource && !resourceIds.has(t.requiredResource)) {
       throw new Error(`tech ${t.id} requires unknown resource ${t.requiredResource}`);
     }
+    // A requiredResource is meant to FORCE settling a biome: it must be some biome's
+    // unique resource, otherwise the gate could never (or always) be satisfied.
+    if (t.requiredResource && !uniqueResources.has(t.requiredResource)) {
+      throw new Error(
+        `tech ${t.id} requires ${t.requiredResource}, which is not any biome's uniqueResource (cannot gate settlement)`,
+      );
+    }
   }
+
+  // ── Reachability: no orphan tech ──────────────────────────────────────────
+  // Every tech must be reachable, via prereq edges, from a no-prereq root. This
+  // catches dependency cycles and islands that the player could never research.
+  const roots = pack.tech.filter((t) => t.prereqs.length === 0).map((t) => t.id);
+  if (roots.length === 0) {
+    throw new Error("content pack has no root tech (every node has a prereq — nothing is researchable first)");
+  }
+  const reachable = new Set<string>(roots);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const t of pack.tech) {
+      if (reachable.has(t.id)) continue;
+      if (t.prereqs.every((p) => reachable.has(p))) {
+        reachable.add(t.id);
+        grew = true;
+      }
+    }
+  }
+  for (const t of pack.tech) {
+    if (!reachable.has(t.id)) {
+      throw new Error(`tech ${t.id} is unreachable from any no-prereq root (orphan or part of a cycle)`);
+    }
+  }
+
+  // ── Every unlockTier target tier is reachable ─────────────────────────────
+  // A tier is "reachable" if some reachable tech grants it. (All tech are reachable
+  // by the check above, so this asserts the tier is actually granted somewhere.)
+  for (const t of pack.tech) {
+    for (const eff of t.effects) {
+      if (eff.kind === "unlockTier" && !reachable.has(t.id)) {
+        throw new Error(`unlockTier(${eff.tier}) on ${t.id} is unreachable`);
+      }
+    }
+  }
+
   return pack;
 }
