@@ -1,6 +1,7 @@
-import { EventPrompts } from "./EventPrompts";
+import { DefensePanel } from "./DefensePanel";
 import { ResourceHud } from "./ResourceHud";
 import { SpeedControls } from "./SpeedControls";
+import { TacticalPanel } from "./TacticalPanel";
 import { TechPanel } from "./TechPanel";
 import { TierControlPanel } from "./TierControlPanel";
 
@@ -13,8 +14,10 @@ import { TierControlPanel } from "./TierControlPanel";
  *   top-right  SpeedControls    pause / 1× / 2× / 3×
  *   right      TierControlPanel the abstraction-zoom payoff: its controls CHANGE
  *                               with game.authorityTier (city focus → continent →
- *                               planet policy → system travel/scan/settle)
- *   bottom     EventPrompts     fortify / evacuate / ignore on active threats
+ *                               planet policy → system policy/travel → empire policy)
+ *   bottom-rt  DefensePanel     build standing defense at owned planets/systems
+ *   bottom     TacticalPanel    telegraph + local defense vs severity per threat;
+ *                               fortify / evacuate / ignore / reinforce
  *
  * Mounted by App.tsx (do not edit App here). `inset:0 pointerEvents:none` lets the
  * God-view receive clicks; each panel re-enables pointer events on itself.
@@ -26,7 +29,8 @@ export function Hud() {
       <TechPanel />
       <SpeedControls />
       <TierControlPanel />
-      <EventPrompts />
+      <DefensePanel />
+      <TacticalPanel />
     </div>
   );
 }
