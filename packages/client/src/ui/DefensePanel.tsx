@@ -1,7 +1,8 @@
 import type { GameState } from "@meteor/shared";
 import { useSim } from "../sim/store";
 import { useSelection } from "../sim/selection";
-import { button, canAfford, defenseInfo, formatCost, heading, panel, subtle } from "./theme";
+import { CollapsiblePanel, isPhoneViewport } from "./CollapsiblePanel";
+import { button, canAfford, defenseInfo, formatCost, subtle } from "./theme";
 
 /**
  * Defense-build panel: the standing-garrison economy. For each owned target
@@ -55,13 +56,17 @@ export function DefensePanel() {
   const affordable = canAfford(game, buildCost);
 
   return (
-    <div style={{ ...panel, bottom: 12, right: 12, width: 224 }}>
-      <div style={heading}>Defenses · {scopeLabel}</div>
+    <CollapsiblePanel
+      title={`Defenses · ${scopeLabel}`}
+      defaultOpen={!isPhoneViewport()}
+      className="hud-dock hud-dock-br"
+      style={{ width: 224 }}
+    >
       <div style={{ ...subtle, fontSize: 11, marginBottom: 8 }}>
         Build standing defense where the frontier is hot — {formatCost(buildCost)} → +
         {defensePerBuild} strength.
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 280, overflowY: "auto" }}>
+      <div className="hud-scroll" style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 280, overflowY: "auto" }}>
         {targets.map((t) => (
           <div key={t.id}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -73,9 +78,11 @@ export function DefensePanel() {
               </span>
             </div>
             <button
+              type="button"
               disabled={!affordable}
               onClick={() => affordable && dispatch({ type: "buildDefense", targetId: t.id })}
               style={{ ...button(false, affordable), marginTop: 4, width: "100%" }}
+              aria-label={`Build defense at ${t.name} — ${affordable ? `spend ${formatCost(buildCost)}` : `need ${formatCost(buildCost)}`}`}
               title={affordable ? `Spend ${formatCost(buildCost)}` : `Need ${formatCost(buildCost)}`}
             >
               {affordable ? `Build defense (${formatCost(buildCost)})` : `Need ${formatCost(buildCost)}`}
@@ -83,6 +90,6 @@ export function DefensePanel() {
           </div>
         ))}
       </div>
-    </div>
+    </CollapsiblePanel>
   );
 }

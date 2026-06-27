@@ -2,7 +2,8 @@ import type { ResourceId } from "@meteor/shared";
 import { getContentPack, tierRank } from "@meteor/shared";
 import { useSim } from "../sim/store";
 import { useSelection } from "../sim/selection";
-import { button, FOCUSABLE_RESOURCES, heading, panel, subtle } from "./theme";
+import { CollapsiblePanel, isPhoneViewport } from "./CollapsiblePanel";
+import { button, FOCUSABLE_RESOURCES, heading, subtle } from "./theme";
 
 /**
  * The signature payoff: ONE panel whose controls change with `game.authorityTier`.
@@ -31,12 +32,15 @@ function FocusPicker({
   disabled?: boolean;
 }) {
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }} role="group">
       {FOCUSABLE_RESOURCES.map((r) => (
         <button
           key={r}
+          type="button"
           disabled={disabled}
           onClick={() => !disabled && onPick(r)}
+          aria-pressed={value === r}
+          aria-label={`Focus ${r}`}
           style={{ ...button(value === r, !disabled), textTransform: "capitalize" }}
         >
           {r}
@@ -70,7 +74,7 @@ function CityTierView() {
       <div style={{ ...subtle, fontSize: 11, marginBottom: 8 }}>
         Authority sits at city tier — set each city's output by hand.
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 320, overflowY: "auto" }}>
+      <div className="hud-scroll" style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 320, overflowY: "auto" }}>
         {cities.map((city) => (
           <div key={city.id}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -107,7 +111,7 @@ function ContinentTierView() {
       <div style={{ ...subtle, fontSize: 11, marginBottom: 8 }}>
         Cities now follow their continent's governor — set the aggregate, not each city.
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 340, overflowY: "auto" }}>
+      <div className="hud-scroll" style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 340, overflowY: "auto" }}>
         {continents.map((cont) => (
           <div key={cont.id}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -147,7 +151,7 @@ function PlanetTierView() {
       <div style={{ ...subtle, fontSize: 11, marginBottom: 8 }}>
         Continents and cities all run on governors — you command whole worlds now.
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 340, overflowY: "auto" }}>
+      <div className="hud-scroll" style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 340, overflowY: "auto" }}>
         {planets.map((planet) => (
           <div key={planet.id}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -207,7 +211,7 @@ function SystemTierView() {
         </div>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 320, overflowY: "auto" }}>
+      <div className="hud-scroll" style={{ display: "flex", flexDirection: "column", gap: 12, maxHeight: 320, overflowY: "auto" }}>
         {systems.map((sys) => {
           const inRange = game.orbitalLaunched && sys.distanceFromHome <= game.maxRange;
           const planets = sys.planetIds
@@ -224,9 +228,11 @@ function SystemTierView() {
                   <span style={{ ...subtle, fontSize: 11 }}>{Math.round(sys.distanceFromHome)} ly</span>
                 ) : (
                   <button
+                    type="button"
                     disabled={!inRange}
                     onClick={() => inRange && dispatch({ type: "travelToSystem", systemId: sys.id })}
                     style={button(false, inRange)}
+                    aria-label={inRange ? `Travel to ${sys.name}` : `${sys.name} out of range`}
                     title={inRange ? "Travel here" : "Out of range — extend ship range first"}
                   >
                     {inRange ? "Travel" : `${Math.round(sys.distanceFromHome)} ly`}
@@ -258,13 +264,23 @@ function SystemTierView() {
                         )}
                       </span>
                       {!p.scanned ? (
-                        <button onClick={() => dispatch({ type: "scanPlanet", planetId: p.id })} style={button()}>
+                        <button
+                          type="button"
+                          onClick={() => dispatch({ type: "scanPlanet", planetId: p.id })}
+                          style={button()}
+                          aria-label={`Scan ${p.name}`}
+                        >
                           Scan
                         </button>
                       ) : p.settled ? (
                         <span style={{ ...subtle, fontSize: 11, color: "#6fdc8c" }}>settled</span>
                       ) : (
-                        <button onClick={() => dispatch({ type: "settlePlanet", planetId: p.id })} style={button(true)}>
+                        <button
+                          type="button"
+                          onClick={() => dispatch({ type: "settlePlanet", planetId: p.id })}
+                          style={button(true)}
+                          aria-label={`Settle ${p.name}`}
+                        >
                           Settle
                         </button>
                       )}
@@ -319,13 +335,18 @@ export function TierControlPanel() {
   else body = <GalaxyTierView />; // galaxy
 
   return (
-    <div style={{ ...panel, top: 64, right: 12, width: 280 }}>
+    <CollapsiblePanel
+      title={`Command · ${authorityTier}`}
+      defaultOpen={!isPhoneViewport()}
+      className="hud-dock hud-dock-tier"
+      style={{ width: 280 }}
+    >
       {body}
       {tierRank(authorityTier) >= tierRank("planet") && authorityTier !== "system" && authorityTier !== "galaxy" ? (
         <div style={{ ...subtle, fontSize: 10, marginTop: 10, fontStyle: "italic" }}>
           Lower tiers run on governors. Research System Command to expand off-world.
         </div>
       ) : null}
-    </div>
+    </CollapsiblePanel>
   );
 }

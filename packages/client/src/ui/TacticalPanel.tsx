@@ -73,11 +73,10 @@ export function TacticalPanel() {
 
   return (
     <div
+      className="hud-dock hud-dock-bc"
+      role="region"
+      aria-label="Active threats"
       style={{
-        position: "absolute",
-        bottom: 12,
-        left: "50%",
-        transform: "translateX(-50%)",
         display: "flex",
         flexDirection: "column",
         gap: 8,
@@ -95,6 +94,7 @@ export function TacticalPanel() {
         return (
           <div
             key={evt.id}
+            className="hud-panel"
             style={{
               ...panel,
               position: "relative",
@@ -144,8 +144,9 @@ export function TacticalPanel() {
               </span>
             </div>
 
-            <div style={{ display: "flex", gap: 6 }}>
+            <div style={{ display: "flex", gap: 6 }} role="group" aria-label={`Respond to ${KIND_LABEL[evt.kind]}`}>
               <button
+                type="button"
                 onClick={() => dispatch({ type: "respondToEvent", eventId: evt.id, response: "fortify" })}
                 style={{ ...button(true), flex: 1 }}
                 title="Commit defenses at the target (×1.75)"
@@ -153,6 +154,7 @@ export function TacticalPanel() {
                 Fortify
               </button>
               <button
+                type="button"
                 onClick={() => dispatch({ type: "respondToEvent", eventId: evt.id, response: "evacuate" })}
                 style={{ ...button(), flex: 1 }}
                 title="Pull back — save the population, cede the ground"
@@ -160,6 +162,7 @@ export function TacticalPanel() {
                 Evacuate
               </button>
               <button
+                type="button"
                 onClick={() => dispatch({ type: "respondToEvent", eventId: evt.id, response: "ignore" })}
                 style={{ ...button(), flex: 1, borderColor: "#3a2230" }}
                 title="Take the hit"
@@ -167,6 +170,7 @@ export function TacticalPanel() {
                 Ignore
               </button>
               <button
+                type="button"
                 disabled={!affordable}
                 onClick={() => affordable && dispatch({ type: "buildDefense", targetId: evt.targetId })}
                 style={{ ...button(false, affordable), flex: 1.2, borderColor: "#2d5a3a" }}

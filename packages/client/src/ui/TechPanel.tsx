@@ -2,7 +2,8 @@ import type { GameState, TechNode } from "@meteor/shared";
 import { getContentPack } from "@meteor/shared";
 import { canResearch, findTech } from "@meteor/sim-core";
 import { useSim } from "../sim/store";
-import { button, heading, panel, subtle } from "./theme";
+import { CollapsiblePanel, isPhoneViewport } from "./CollapsiblePanel";
+import { button, subtle } from "./theme";
 
 /**
  * Tech tree: every node with its prereqs + requiredResource gating. A node greys
@@ -33,9 +34,12 @@ export function TechPanel() {
   const progressPct = current && current.cost > 0 ? Math.min(100, (game.research.progress / current.cost) * 100) : 0;
 
   return (
-    <div style={{ ...panel, top: 12, left: 220, width: 280, maxHeight: "calc(100vh - 24px)", overflowY: "auto" }}>
-      <div style={heading}>Research</div>
-
+    <CollapsiblePanel
+      title="Research"
+      defaultOpen={!isPhoneViewport()}
+      className="hud-dock hud-dock-tech"
+      style={{ width: 280, maxHeight: "calc(100vh - 24px)", overflowY: "auto" }}
+    >
       {current ? (
         <div style={{ marginBottom: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -53,7 +57,7 @@ export function TechPanel() {
         <div style={{ ...subtle, fontSize: 11, marginBottom: 12 }}>No active research — pick a tech below.</div>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div className="hud-scroll" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {pack.tech.map((node) => {
           const unlocked = game.research.unlocked.includes(node.id);
           const active = game.research.current === node.id;
@@ -82,12 +86,14 @@ export function TechPanel() {
                   <span style={{ color: "#5b8cff", fontSize: 11 }}>active</span>
                 ) : (
                   <button
+                    type="button"
                     disabled={!researchable}
                     onClick={() => researchable && dispatch({ type: "startResearch", techId: node.id })}
                     style={button(false, researchable)}
+                    aria-label={`Research ${node.name} — cost ${node.cost}${locked ? `; ${locked}` : ""}`}
                     title={locked ?? `Cost ${node.cost} research`}
                   >
-                    {node.cost} ⚲
+                    <span aria-hidden="true">{node.cost} ⚲</span>
                   </button>
                 )}
               </div>
@@ -98,6 +104,6 @@ export function TechPanel() {
           );
         })}
       </div>
-    </div>
+    </CollapsiblePanel>
   );
 }
