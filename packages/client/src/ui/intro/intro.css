@@ -1,0 +1,167 @@
+/*
+ * [intro] Cinematic onboarding styles — the black "emerge from blackness" fade and the
+ * stepped onboarding card that floats over the intro <Canvas>.
+ *
+ * Mobile-safe by construction: the card is centered in the viewport via a flex frame,
+ * max-width min(440px, 92vw), padded from the edges, and capped at 90vh with internal
+ * scroll — so it always fits a 390px-wide phone (the bug this replaces overflowed).
+ *
+ * Contrast rule (mirrors shell.css / hud.css): NO opacity-based dimming for text — the
+ * card's fade-in animates the CARD, and once in, text uses explicit AA colors. Scrim
+ * is solid-on-backdrop only.
+ */
+
+.intro-root {
+  --intro-bg: rgba(8, 11, 18, 0.94);
+  --intro-border: #243150;
+  --intro-text: #e8edf6;
+  --intro-muted: #aeb8cc;
+  --intro-focus: #8fb4ff;
+  --intro-accent: #2862e6;
+  --intro-accent-border: #5b8cff;
+  position: fixed;
+  inset: 0;
+  color: var(--intro-text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #000;
+}
+
+/* The 3D canvas fills the root. */
+.intro-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+/* The "emerge from blackness" curtain: a black div faded 1 → 0 over the first beat. */
+.intro-curtain {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 1.2s ease-out;
+  z-index: 2;
+}
+.intro-curtain--lifted {
+  opacity: 0;
+}
+
+/* Centering frame for the card — pointer-events only on the card itself. */
+.intro-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.intro-card {
+  pointer-events: auto;
+  width: min(440px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 24px 24px 20px;
+  background: var(--intro-bg);
+  border: 1px solid var(--intro-border);
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  /* Fade + lift in once "in" is set (host gates this after the ship is seen). */
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.intro-card--in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.intro-card :focus-visible {
+  outline: 2px solid var(--intro-focus);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.intro-step-indicator {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--intro-muted);
+}
+
+.intro-card__title {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  line-height: 1.2;
+}
+
+.intro-card__body {
+  margin: 0 0 20px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--intro-text);
+}
+
+.intro-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.intro-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 1 1 auto;
+  min-height: 44px;
+  padding: 11px 18px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.intro-btn--primary {
+  color: #fff;
+  background: var(--intro-accent);
+  border: 1px solid var(--intro-accent-border);
+}
+.intro-btn--primary:hover {
+  background: #3672ff;
+}
+
+.intro-btn--ghost {
+  flex: 0 0 auto;
+  color: var(--intro-text);
+  background: #1a2236;
+  border: 1px solid #3a4668;
+}
+.intro-btn--ghost:hover {
+  background: #232c44;
+  border-color: #4a5a82;
+}
+
+/* ---- Reduced motion: kill the curtain/card transitions; show content at once. ---- */
+.intro-root[data-reduced-motion="on"] .intro-curtain,
+.intro-root[data-reduced-motion="on"] .intro-card,
+:root[data-reduced-motion="on"] .intro-root .intro-curtain,
+:root[data-reduced-motion="on"] .intro-root .intro-card {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-reduced-motion="off"]) .intro-root .intro-curtain,
+  :root:not([data-reduced-motion="off"]) .intro-root .intro-card {
+    transition: none !important;
+  }
+}
