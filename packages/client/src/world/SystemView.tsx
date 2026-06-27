@@ -6,7 +6,9 @@ import type { GameState, StarSystem } from "@meteor/shared";
 import { useSelection } from "../sim/selection";
 import { PALETTE } from "./palette";
 import { PlanetView } from "./PlanetView";
-import { planetOffset, systemPosition } from "./layout";
+import { DefenseShield } from "./DefenseView";
+import { SystemThreats } from "./ThreatView";
+import { planetOffset, planetRadius, systemPosition } from "./layout";
 
 /**
  * One star system in galaxy space: a glowing star with its planets laid out on
@@ -63,6 +65,7 @@ export function SystemView({
   game: GameState;
 }) {
   const select = useSelection((s) => s.select);
+  const selectedId = useSelection((s) => s.selectedId);
   const pos = systemPosition(system);
   const isHome = system.id === game.homeSystemId;
 
@@ -73,6 +76,21 @@ export function SystemView({
         .filter((p): p is NonNullable<typeof p> => Boolean(p)),
     [system.planetIds, game.planets],
   );
+
+  // Is this system the one the player has dived into to inspect? When it's also
+  // under threat we light up the tactical overlay (threats + defenses, head to head).
+  const isFocused = selectedId === system.id;
+  const isThreatened = useMemo(
+    () =>
+      game.events.some((e) => {
+        if (e.mitigated) return false;
+        if (e.targetId === system.id) return true;
+        const p = game.planets[e.targetId];
+        return p ? p.systemId === system.id : false;
+      }),
+    [game.events, game.planets, system.id],
+  );
+  const tactical = isFocused && isThreatened;
 
   return (
     <group position={pos} name={`system:${system.id}`}>
@@ -86,20 +104,41 @@ export function SystemView({
         <Star isHome={isHome} />
       </group>
 
+      {/* System-level built defense — a shield wrapping the whole star. */}
+      <DefenseShield defense={system.defense} radius={1.6} />
+
       {planets.map((planet) => {
         const offset = planetOffset(planet);
+        const r = planetRadius(planet, planet.id === game.cradlePlanetId);
         return (
           <group key={planet.id}>
             <OrbitRing radius={planet.orbit.radius} />
-            <PlanetView
-              planet={planet}
-              game={game}
-              isCradle={planet.id === game.cradlePlanetId}
-              position={offset}
-            />
+            <group position={offset}>
+              <PlanetView
+                planet={planet}
+                game={game}
+                isCradle={planet.id === game.cradlePlanetId}
+                position={[0, 0, 0]}
+              />
+              {/* Per-planet built defense — a shield ring around settled worlds. */}
+              <DefenseShield defense={planet.defense} radius={r} />
+            </group>
           </group>
         );
       })}
+
+      {/* Threats targeting this system. In the tactical dive they're the headline;
+          at galaxy zoom the ThreatLayer in GalaxyView carries the long-range read. */}
+      {tactical && (
+        <>
+          <SystemThreats game={game} systemId={system.id} />
+          {/* A tactical-overview ring framing the contested system as one theater. */}
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[18, 18.6, 64]} />
+            <meshBasicMaterial color={PALETTE.threat} transparent opacity={0.18} depthWrite={false} />
+          </mesh>
+        </>
+      )}
     </group>
   );
 }
