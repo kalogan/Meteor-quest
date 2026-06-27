@@ -1,0 +1,64 @@
+# Meteor Quest — Vertical Slice Design (locked)
+
+Exploration + resource-management game. Signature mechanic: **one continuous zoom**
+(Hegemony-style) where the player's *authority* aggregates upward as the empire
+scales — you grow the way you choose, and discovery alters how you play.
+
+## Locked decisions
+
+| Axis | Decision |
+|---|---|
+| Stack | Browser 3D, React-Three-Fiber, TS pnpm monorepo |
+| Time | Real-time fixed tick + pause/speed (deterministic; injected clock/RNG) |
+| The slice | 3-in-1 arc: grow cradle → zoom out → launch → explore → settle one world |
+| Zoom model | Authority **aggregates** upward; lower tiers run on **governors**; dive down to override |
+| Tier gate | tech milestone **AND** territory threshold (both) |
+| Biome payoff | unique **resource** (gates tech) **+** category **spiff** (multiplier) |
+| Fog of war | **sensor-tech scaled** reveal |
+| Conflict | environmental pressure + rare catastrophes (meteor/supernova) + light threats (pirates/beasts), resolved through the same zoom (tactical overview); God-view, no piloting |
+| Economy | stockpiles + a mine→refine layer that gets automated/abstracted as you zoom up |
+| Travel | fuel/range constrained, ship-tier gated, God-view |
+| World | home system + 1 neighbor (reachable only after fuel/range tech) |
+| Content | tiny but complete: ~4 biomes, ~9 resources, ~11 tech |
+| Look | stylized low-poly |
+
+## The unified zoom / authority tiers
+
+```
+GALAXY    — deferred past slice 1
+SYSTEM    — direct expansion/travel; planets revealed by sensor range
+PLANET    — set planet-wide output policy
+CONTINENT — set continent output (aggregate; cities auto-follow via governor)
+CITY      — direct city output + the mine→refine micro
+TACTICAL  — dive here when threatened: commit defenses
+```
+
+Camera roams freely, but **authority** sits at the highest unlocked tier; lower
+tiers are governor-automated and can be dived into to override. Promotion needs the
+tech AND the territory threshold (see `sim-core/systems/tiers.ts`).
+
+## The arc (≈20–30 min)
+
+1. Cradle (city tier): mine→refine→stockpile + research, manually.
+2. First zoom: research *Federal Administration* + own enough cities → continent tier. Micro abstracts away.
+3. Planet tier + *Orbital Launch* → leave the cradle.
+4. Explore: sensor tech reveals home system, then the neighbor as range grows. A pirate raid + a meteor warning demonstrate dive-to-tactical / mitigate-or-lose.
+5. Settle: scan a neighbor biome world, settle it, claim its resource + spiff → unlocks a previously-gated tech.
+
+## Non-negotiable constraints (gated)
+
+- **Core is engine-agnostic.** `@meteor/shared` + `@meteor/sim-core` may not import
+  three/react/DOM (ESLint arch-guard).
+- **Sim is authoritative + deterministic.** All state transitions live in sim-core
+  (`tick` + `applyCommand`), pure functions of state. No `Math.random`/`Date.now`/
+  `new Date` in core — use injected RNG/clock. Same seed ⇒ same galaxy.
+- **Client is optimistic-cosmetic.** It renders sim state and dispatches Commands;
+  it never mutates game state.
+- **Content is data.** Biomes/resources/tech are authored JSON, validated by the
+  shared schema (same schema for product + preview). New artifacts appear by data.
+- **Every system ships tests.** Record counts.
+
+## The gate
+
+`bash scripts/gate.sh` — typecheck · lint+arch-guards · content-lint · tests · build,
+each timeout-wrapped, real exit codes. Must be GREEN before advancing a slice.
