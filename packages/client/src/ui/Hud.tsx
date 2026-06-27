@@ -1,5 +1,7 @@
 import { DefensePanel } from "./DefensePanel";
+import { IntroDialog } from "./IntroDialog";
 import { JourneyPanel } from "./JourneyPanel";
+import { ObjectivesPanel } from "./ObjectivesPanel";
 import { ResourceHud } from "./ResourceHud";
 import { SpeedControls } from "./SpeedControls";
 import { TacticalPanel } from "./TacticalPanel";
@@ -39,6 +41,7 @@ export function Hud() {
 
       {/* Heavy panels: accordion drawer (phone) / docked corners (desktop). */}
       <div className="hud-drawer">
+        <ObjectivesPanel />
         <TechPanel />
         <TierControlPanel />
         <JourneyPanel />
@@ -47,6 +50,9 @@ export function Hud() {
 
       {/* Threat alerts — always surfaced, never collapsed. */}
       <TacticalPanel />
+
+      {/* First-time onboarding welcome (shown once; never blocks the game). */}
+      <IntroDialog />
     </aside>
   );
 }
