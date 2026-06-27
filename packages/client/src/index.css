@@ -1,0 +1,12 @@
+:root {
+  color-scheme: dark;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body, #root {
+  margin: 0;
+  height: 100%;
+  background: #05060a;
+  color: #e8eef7;
+  overflow: hidden;
+}

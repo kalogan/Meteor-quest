@@ -1,0 +1,30 @@
+{
+  "name": "meteor-quest",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r --no-bail typecheck",
+    "lint": "eslint .",
+    "lint:content": "pnpm --filter @meteor/shared lint:content",
+    "test": "pnpm -r --no-bail test",
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter @meteor/client dev",
+    "dev:preview": "pnpm --filter @meteor/client dev:preview",
+    "build:preview": "pnpm --filter @meteor/client build:preview",
+    "gate": "bash scripts/gate.sh"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "eslint": "^9.39.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
+  }
+}
