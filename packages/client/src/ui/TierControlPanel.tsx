@@ -12,7 +12,9 @@ import { button, FOCUSABLE_RESOURCES, heading, panel, subtle } from "./theme";
  *   city      → per-city focus selectors (the manual micro)
  *   continent → continent policy; cities shown as governed/auto (read-only)
  *   planet    → planet-wide policy; continents + cities all auto
- *   system    → travel / scan / settle (expansion, no more output micro)
+ *   system    → per-system output policy (setSystemPolicy); planets governed/auto,
+ *               plus the expansion micro (travel / scan / settle)
+ *   galaxy    → a single empire policy (setEmpirePolicy); every system below is auto
  *
  * `useSelection` scopes the panel to the clicked entity where it makes sense, so
  * diving the camera into one city/continent narrows the controls to it.
@@ -163,22 +165,36 @@ function PlanetTierView() {
   );
 }
 
+const DEFAULT_POLICY: ResourceId = FOCUSABLE_RESOURCES[0] ?? "minerals";
+
 function SystemTierView() {
   const game = useSim((s) => s.game);
   const dispatch = useSim((s) => s.dispatch);
+  const { selectedId, selectedKind } = useSelection();
   const pack = getContentPack();
 
-  const systems = Object.values(game.systems).sort((a, b) => a.distanceFromHome - b.distanceFromHome);
+  let systems = Object.values(game.systems).sort((a, b) => a.distanceFromHome - b.distanceFromHome);
+  const selSystem = selectedId ? game.systems[selectedId] : undefined;
+  if (selectedKind === "system" && selSystem) systems = [selSystem];
 
   function biomeName(id: string): string {
     return pack.biomes.find((b) => b.id === id)?.name ?? id;
+  }
+
+  // A system governs its planets: settled planets in a discovered system run on the
+  // system policy (governor), echoing the planet-tier abstraction one level up.
+  function settledPlanets(sys: (typeof systems)[number]) {
+    return sys.planetIds
+      .map((id) => game.planets[id])
+      .filter((p): p is NonNullable<typeof p> => Boolean(p?.settled));
   }
 
   return (
     <>
       <div style={heading}>System Command</div>
       <div style={{ ...subtle, fontSize: 11, marginBottom: 8 }}>
-        Travel to systems within range, scan their worlds, then settle the scanned ones.
+        Each system runs on its own governor — set its policy; its worlds auto-follow.
+        Travel, scan, and settle to expand the empire.
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, marginBottom: 10 }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -218,6 +234,16 @@ function SystemTierView() {
                 )}
               </div>
 
+              {sys.discovered && settledPlanets(sys).length > 0 ? (
+                <div style={{ marginTop: 5, marginLeft: 8 }}>
+                  <div style={{ ...subtle, fontSize: 10 }}>system policy · {settledPlanets(sys).length} worlds auto</div>
+                  <FocusPicker
+                    value={sys.policy ?? game.empirePolicy ?? DEFAULT_POLICY}
+                    onPick={(r) => dispatch({ type: "setSystemPolicy", systemId: sys.id, resource: r })}
+                  />
+                </div>
+              ) : null}
+
               {sys.discovered ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 5, marginLeft: 8 }}>
                   {planets.map((p) => (
@@ -254,20 +280,48 @@ function SystemTierView() {
   );
 }
 
+function GalaxyTierView() {
+  const game = useSim((s) => s.game);
+  const dispatch = useSim((s) => s.dispatch);
+
+  const systems = Object.values(game.systems);
+  const discovered = systems.filter((s) => s.discovered);
+
+  return (
+    <>
+      <div style={heading}>Empire Policy</div>
+      <div style={{ ...subtle, fontSize: 11, marginBottom: 8 }}>
+        Authority sits at the galaxy. One directive cascades down every system and
+        world — the whole empire runs on governors below you.
+      </div>
+      <FocusPicker
+        value={game.empirePolicy ?? DEFAULT_POLICY}
+        onPick={(r) => dispatch({ type: "setEmpirePolicy", resource: r })}
+      />
+      <div style={{ ...subtle, fontSize: 10, marginTop: 10 }}>
+        governing {discovered.length} system{discovered.length === 1 ? "" : "s"} ·{" "}
+        {Object.values(game.planets).filter((p) => p.settled).length} settled worlds · auto
+      </div>
+    </>
+  );
+}
+
 export function TierControlPanel() {
   const authorityTier = useSim((s) => s.game.authorityTier);
 
-  // System tier supersedes output micro: at that point you're expanding, not steering.
+  // The aggregation reaches its peak: city focus → continent → planet → system
+  // policy → a single empire directive at galaxy tier.
   let body: React.ReactNode;
   if (authorityTier === "city") body = <CityTierView />;
   else if (authorityTier === "continent") body = <ContinentTierView />;
   else if (authorityTier === "planet") body = <PlanetTierView />;
-  else body = <SystemTierView />; // system / galaxy
+  else if (authorityTier === "system") body = <SystemTierView />;
+  else body = <GalaxyTierView />; // galaxy
 
   return (
     <div style={{ ...panel, top: 64, right: 12, width: 280 }}>
       {body}
-      {tierRank(authorityTier) >= tierRank("planet") && authorityTier !== "system" ? (
+      {tierRank(authorityTier) >= tierRank("planet") && authorityTier !== "system" && authorityTier !== "galaxy" ? (
         <div style={{ ...subtle, fontSize: 10, marginTop: 10, fontStyle: "italic" }}>
           Lower tiers run on governors. Research System Command to expand off-world.
         </div>
