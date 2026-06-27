@@ -6,3 +6,17 @@ export { applyCommand } from "./commands.js";
 export { canResearch, findTech, reevaluateTierPromotion } from "./systems/research.js";
 export { categoryMultipliers, effectiveFocus } from "./systems/economy.js";
 export { territoryAllowsTier } from "./systems/tiers.js";
+// ── Slice systems added by the engine deepening ────────────────────────────────
+export { runFog, systemInSensorRange } from "./systems/fog.js";
+export { canTravel, travelBlocker, fuelCost, FUEL_PER_DISTANCE, type TravelBlock } from "./systems/travel.js";
+export {
+  runThreats,
+  maybeSpawnEvent,
+  resolveDueEvents,
+  playerDefense,
+  demoteIfUnsupported,
+  eventResponse,
+  setEventResponse,
+  type SimEvent,
+  type EventResponse,
+} from "./systems/threats.js";
