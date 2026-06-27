@@ -62,3 +62,34 @@ tech AND the territory threshold (see `sim-core/systems/tiers.ts`).
 
 `bash scripts/gate.sh` — typecheck · lint+arch-guards · content-lint · tests · build,
 each timeout-wrapped, real exit codes. Must be GREEN before advancing a slice.
+
+---
+
+## Slice 2 — "Beyond the cradle system"
+
+Builds on the slice-1 base (do not regress it). Four themes:
+
+1. **Procedural galaxy.** Worldgen generates N seeded star systems (content `galaxy`
+   config: systemCount/radius/minSeparation) scattered in galaxy space, each with
+   planets/biomes, explored through the existing sensor/range fog. Home + the slice-1
+   neighbor become part of the larger map.
+2. **Top of the authority ladder.** The aggregation now reaches its peak:
+   `system` tier → `StarSystem.policy` governs its planets; `galaxy` tier →
+   `GameState.empirePolicy` governs all systems. Governors run everything below the
+   player's authority; promotion still needs tech AND territory.
+3. **Deeper tactical defense.** `buildDefense(targetId)` spends resources (content
+   `defense` config) to raise `Planet.defense` / `StarSystem.defense`. Threats now
+   **telegraph** (`spawnedAtTick`→`resolvesAtTick`) across the galaxy map, and
+   resolution weighs **local** defense (the target's built defense) + empire baseline
+   + the tactical response — so you invest defense where the frontier is hot. Dive to
+   a threatened system for the tactical view. Still God-view, still light, but real
+   agency beyond a single stat check.
+4. **Persistence.** Save/load the authoritative `GameState` to localStorage
+   (versioned, throttled autosave, load-on-boot, new-game) so the longer galaxy game
+   survives a refresh.
+
+**Contract delta (all additive / green-safe):** `Planet.defense?`,
+`StarSystem.policy?`+`defense?`, `GameState.empirePolicy?`, `ActiveEvent.spawnedAtTick?`;
+Commands `buildDefense` / `setSystemPolicy` / `setEmpirePolicy`; optional content
+`GalaxyConfigSchema` + `DefenseConfigSchema`. Optional everywhere so the slice-1 base
+stays green; sim-core populates + reads them with defaults.

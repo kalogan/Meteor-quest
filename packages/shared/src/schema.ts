@@ -63,12 +63,36 @@ export const TechNodeSchema = z.object({
 });
 export type TechNode = z.infer<typeof TechNodeSchema>;
 
+/** [slice 2] Procedural galaxy generation parameters (content-tunable; sim-core
+ * falls back to defaults if absent). */
+export const GalaxyConfigSchema = z.object({
+  /** How many star systems the galaxy contains (incl. home). */
+  systemCount: z.number().int().min(2),
+  /** Galaxy-space radius the systems are scattered within. */
+  radius: z.number().positive(),
+  /** Minimum separation between any two systems (avoids overlap). */
+  minSeparation: z.number().positive(),
+});
+export type GalaxyConfig = z.infer<typeof GalaxyConfigSchema>;
+
+/** [slice 2] Tactical-defense economy (content-tunable; sim-core has defaults). */
+export const DefenseConfigSchema = z.object({
+  /** Resource cost paid per buildDefense action. */
+  buildCost: z.record(ResourceIdSchema, z.number().positive()),
+  /** Defensive strength gained per buildDefense action. */
+  defensePerBuild: z.number().positive(),
+});
+export type DefenseConfig = z.infer<typeof DefenseConfigSchema>;
+
 export const ContentPackSchema = z.object({
   id: z.string().min(1),
   version: z.number().int().nonnegative(),
   biomes: z.array(BiomeSchema).min(1),
   resources: z.array(ResourceSchema).min(1),
   tech: z.array(TechNodeSchema).min(1),
+  /** [slice 2] optional; sim-core defaults apply when omitted. */
+  galaxy: GalaxyConfigSchema.optional(),
+  defense: DefenseConfigSchema.optional(),
 });
 export type ContentPack = z.infer<typeof ContentPackSchema>;
 

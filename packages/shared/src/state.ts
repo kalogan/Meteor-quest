@@ -42,6 +42,8 @@ export interface Planet {
   settled: boolean;
   /** Planet-wide aggregate focus applied when authority sits at >= planet. */
   policy: ResourceId;
+  /** [slice 2] Built defensive strength at this planet (buildDefense). Default 0. */
+  defense?: number;
 }
 
 export interface StarSystem {
@@ -54,6 +56,10 @@ export interface StarSystem {
   planetIds: string[];
   /** Revealed by sensor range; until then it's an unknown blip or hidden. */
   discovered: boolean;
+  /** [slice 2] System-wide aggregate focus applied when authority sits at >= system. */
+  policy?: ResourceId;
+  /** [slice 2] Built system-level defensive strength (buildDefense). Default 0. */
+  defense?: number;
 }
 
 export type EventKind = "pirateRaid" | "beast" | "meteor" | "supernova";
@@ -68,6 +74,9 @@ export interface ActiveEvent {
   /** Threat strength, compared against the player's defense at the target. */
   severity: number;
   mitigated: boolean;
+  /** [slice 2] Tick the threat appeared; with resolvesAtTick gives the telegraph
+   * window the galaxy map renders an incoming threat across. */
+  spawnedAtTick?: number;
 }
 
 export interface ResearchState {
@@ -99,6 +108,8 @@ export interface GameState {
 
   /** Highest unlocked authority tier (tech AND territory gated). */
   authorityTier: TierId;
+  /** [slice 2] Empire-wide aggregate focus applied when authority sits at galaxy tier. */
+  empirePolicy?: ResourceId;
   /** Ship travel range in galaxy-space units. */
   maxRange: number;
   /** Sensor reveal radius in galaxy-space units. */
@@ -126,4 +137,11 @@ export type Command =
   | { type: "scanPlanet"; planetId: string }
   | { type: "travelToSystem"; systemId: string }
   | { type: "settlePlanet"; planetId: string }
-  | { type: "respondToEvent"; eventId: string; response: "fortify" | "evacuate" | "ignore" };
+  | { type: "respondToEvent"; eventId: string; response: "fortify" | "evacuate" | "ignore" }
+  // ── [slice 2] galaxy tier + tactical defense ────────────────────────────────
+  /** Spend resources to add defensive strength at a planet or system. */
+  | { type: "buildDefense"; targetId: string }
+  /** System-wide aggregate focus (governor) when authority sits at >= system. */
+  | { type: "setSystemPolicy"; systemId: string; resource: ResourceId }
+  /** Empire-wide aggregate focus (governor) at galaxy tier. */
+  | { type: "setEmpirePolicy"; resource: ResourceId };
