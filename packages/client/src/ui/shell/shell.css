@@ -1,0 +1,326 @@
+/*
+ * Game-shell styles: title screen, pause menu, settings dialog.
+ *
+ * The shell is the game's "front door" — a title/splash over a live galaxy backdrop,
+ * an Esc-toggled pause overlay, and a settings dialog reachable from both. Like the
+ * HUD, inline styles in theme.ts can't express media queries / :focus-visible /
+ * dialog scrims, so layout + focus rings + the reduced-motion override live here.
+ *
+ * Contrast rule (mirrors hud.css): NO opacity-based dimming for text or disabled
+ * states — opacity composites contrast below WCAG AA. Scrims use solid rgba on the
+ * backdrop only (never over text); disabled controls use explicit muted colors.
+ */
+
+/* ---- Tokens (mirror hud.css / theme.ts) ---- */
+.shell-root {
+  --shell-bg: rgba(10, 14, 22, 0.92);
+  --shell-border: #243150;
+  --shell-text: #e8edf6;
+  --shell-muted: #aab4c8;
+  --shell-focus: #8fb4ff;
+  --shell-accent: #2862e6;
+  --shell-accent-border: #5b8cff;
+  position: fixed;
+  inset: 0;
+  color: var(--shell-text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Visible focus ring on every interactive element. */
+.shell-root :focus-visible {
+  outline: 2px solid var(--shell-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---- Live galaxy backdrop (non-interactive) ---- */
+.shell-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* the menu over it stays clickable */
+}
+
+/* ---- Centered menu scaffold (title + pause share it) ---- */
+.shell-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: none; /* only the card inside takes pointer events */
+}
+
+/* Scrim for overlay menus (pause/settings). Solid-on-backdrop, never over text. */
+.shell-scrim {
+  background: rgba(3, 5, 10, 0.6);
+  backdrop-filter: blur(2px);
+  pointer-events: auto;
+}
+
+/* ---- Menu card (dialog body) ---- */
+.shell-card {
+  pointer-events: auto;
+  background: var(--shell-bg);
+  border: 1px solid var(--shell-border);
+  border-radius: 12px;
+  padding: 28px 28px 24px;
+  width: min(440px, 92vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+}
+
+.shell-title {
+  margin: 0 0 4px;
+  font-size: clamp(28px, 6vw, 44px);
+  font-weight: 800;
+  letter-spacing: 1px;
+  line-height: 1.05;
+  background: linear-gradient(90deg, #8fb4ff, #c9d6ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.shell-tagline {
+  margin: 0 0 22px;
+  color: var(--shell-muted);
+  font-size: 14px;
+  letter-spacing: 0.4px;
+}
+
+.shell-menu-heading {
+  margin: 0 0 16px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* ---- Menu button column ---- */
+.shell-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shell-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--shell-text);
+  background: #1a2236;
+  border: 1px solid #3a4668;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.shell-btn:hover:not(:disabled) {
+  background: #232c44;
+  border-color: #4a5a82;
+}
+
+.shell-btn--primary {
+  background: var(--shell-accent);
+  border-color: var(--shell-accent-border);
+  color: #fff;
+}
+
+.shell-btn--primary:hover:not(:disabled) {
+  background: #3672ff;
+}
+
+.shell-btn--danger {
+  border-color: #6a3140;
+}
+.shell-btn--danger:hover:not(:disabled) {
+  background: #34202a;
+  border-color: #8a4150;
+}
+
+.shell-btn:disabled {
+  /* No opacity dimming: explicit muted text/border keeps contrast >= AA. */
+  color: #9aa3b8;
+  background: #161c2c;
+  border-color: #2b3450;
+  cursor: not-allowed;
+}
+
+/* ---- Settings rows ---- */
+.shell-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 4px 0 22px;
+}
+
+.shell-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.shell-field__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.shell-field__label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.shell-field__hint {
+  color: var(--shell-muted);
+  font-size: 12px;
+}
+
+.shell-field__value {
+  color: var(--shell-muted);
+  font-size: 13px;
+  min-width: 44px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.shell-select {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  font-size: 14px;
+  color: var(--shell-text);
+  background: #1a2236;
+  border: 1px solid #3a4668;
+  border-radius: 6px;
+  padding: 8px 28px 8px 10px;
+  cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--shell-muted) 50%),
+    linear-gradient(135deg, var(--shell-muted) 50%, transparent 50%);
+  background-position: calc(100% - 16px) 55%, calc(100% - 11px) 55%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.shell-range {
+  width: 100%;
+  accent-color: var(--shell-accent);
+  cursor: pointer;
+}
+
+/* Segmented control (default speed). */
+.shell-seg {
+  display: inline-flex;
+  gap: 4px;
+}
+.shell-seg__btn {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  font-size: 14px;
+  min-width: 40px;
+  padding: 8px 10px;
+  color: var(--shell-text);
+  background: #1a2236;
+  border: 1px solid #3a4668;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.shell-seg__btn[aria-pressed="true"] {
+  background: var(--shell-accent);
+  border-color: var(--shell-accent-border);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* Switch (toggle) rendered from a real checkbox. */
+.shell-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.shell-switch input {
+  /* keep the real checkbox operable + focusable, drawn as a track+knob */
+  appearance: none;
+  -webkit-appearance: none;
+  width: 44px;
+  height: 26px;
+  margin: 0;
+  border-radius: 999px;
+  background: #2b3450;
+  border: 1px solid #3a4668;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.shell-switch input:checked {
+  background: var(--shell-accent);
+  border-color: var(--shell-accent-border);
+}
+.shell-switch input::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #e8edf6;
+  transition: transform 0.15s ease;
+}
+.shell-switch input:checked::after {
+  transform: translateX(18px);
+}
+
+.shell-settings-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.shell-settings-footer .shell-btn {
+  flex: 1 1 140px;
+  width: auto;
+  text-align: center;
+  font-size: 14px;
+  padding: 10px 12px;
+}
+
+.shell-dialog-close {
+  margin-top: 4px;
+}
+
+/* ---- Touch targets: >= 44x44 on coarse pointers ---- */
+@media (pointer: coarse) {
+  .shell-btn,
+  .shell-seg__btn,
+  .shell-select {
+    min-height: 44px;
+  }
+}
+
+/* ---- Reduced motion ----
+ * "auto" leaves the OS prefers-reduced-motion query in charge (below). "on" forces
+ * the dataset attribute, which kills transitions everywhere under the shell root.
+ * "off" sets the attribute to "off" so even an OS preference is overridden here.
+ */
+.shell-root[data-reduced-motion="on"] *,
+:root[data-reduced-motion="on"] .shell-root * {
+  transition: none !important;
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-reduced-motion="off"]) .shell-root * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
