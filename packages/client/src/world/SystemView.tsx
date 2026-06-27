@@ -8,7 +8,26 @@ import { PALETTE } from "./palette";
 import { PlanetView } from "./PlanetView";
 import { DefenseShield } from "./DefenseView";
 import { SystemThreats } from "./ThreatView";
+import { OrbitingFleet } from "./OrbitingFleet";
 import { planetOffset, planetRadius, systemPosition } from "./layout";
+
+/**
+ * Whether to reduce motion right now — mirrors the intro's resolution order: an explicit
+ * settings override (data attribute) wins, else the OS preference. Returns a stable
+ * boolean computed in render (no store selector), so it never feeds a fresh object into
+ * a subscriber.
+ */
+function prefersReducedMotion(): boolean {
+  if (typeof document !== "undefined") {
+    const flag = document.documentElement.dataset.reducedMotion;
+    if (flag === "on") return true;
+    if (flag === "off") return false;
+  }
+  if (typeof window !== "undefined" && window.matchMedia) {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+  return false;
+}
 
 /**
  * One star system in galaxy space: a glowing star with its planets laid out on
@@ -68,6 +87,8 @@ export function SystemView({
   const selectedId = useSelection((s) => s.selectedId);
   const pos = systemPosition(system);
   const isHome = system.id === game.homeSystemId;
+  // Resolved once per render; the home fleet holds still when motion is reduced.
+  const reducedMotion = prefersReducedMotion();
 
   const planets = useMemo(
     () =>
@@ -109,7 +130,8 @@ export function SystemView({
 
       {planets.map((planet) => {
         const offset = planetOffset(planet);
-        const r = planetRadius(planet, planet.id === game.cradlePlanetId);
+        const isCradle = planet.id === game.cradlePlanetId;
+        const r = planetRadius(planet, isCradle);
         return (
           <group key={planet.id}>
             <OrbitRing radius={planet.orbit.radius} />
@@ -117,11 +139,14 @@ export function SystemView({
               <PlanetView
                 planet={planet}
                 game={game}
-                isCradle={planet.id === game.cradlePlanetId}
+                isCradle={isCradle}
                 position={[0, 0, 0]}
               />
               {/* Per-planet built defense — a shield ring around settled worlds. */}
               <DefenseShield defense={planet.defense} radius={r} />
+              {/* The home fleet — your ship + deployed mining probe orbiting the cradle,
+                  carried over from the tutorial. Cosmetic; cradle only. */}
+              {isCradle && <OrbitingFleet radius={r} reducedMotion={reducedMotion} />}
             </group>
           </group>
         );
