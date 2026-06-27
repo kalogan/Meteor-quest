@@ -2,6 +2,24 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Journey — flying to a new planet (tasks #15–18) — done, verified
+- Visible real-time expeditions: launch toward a reachable system → ship flies across
+  galaxy space (autopilot homes; Arrow/A-D lightly steer, costing fuel) → arrival
+  reveals the target for scan/settle. God-view, no piloting. Save bumped to v2.
+- sim-core journey state machine (87 sim tests). World: low-poly ship + engine trail +
+  camera-follow + keyboard steering (avoids orbit-drag clash). UI: launch list +
+  in-transit EXPEDITION panel (dest/distance/ETA/fuel/abort), accessible + responsive.
+- Architect runtime-smoke (inject in-flight save): ship renders + camera follows,
+  **console CLEAN**, journey advances and ARRIVES → target system discovered
+  ("Expedition arrived at Vega Reach"). Full gate GREEN (102 tests).
+- LESSON (written in blood): two client builders committing concurrently hit a
+  git-add RACE — one commit captured the other's staged files (crossed attribution)
+  AND left a new file untracked + a file uncommitted, so HEAD imported a file not in
+  git (unbuildable on fresh checkout). Targeted-add + index.lock-retry was not
+  sufficient. Detected via `git status` post-fan-out; salvaged by committing the
+  orphaned files (no history rewrite). MITIGATION for next time: serialize commits of
+  builders sharing a package, or give each its own git worktree.
+
 ## Mobile + collapsible + WCAG pass (task #14) — done, verified
 - HUD is responsive (desktop corner-docks; phone = top status strip + bottom accordion
   drawer, canvas stays visible), panels collapse/expand (collapsed-by-default on phone),
