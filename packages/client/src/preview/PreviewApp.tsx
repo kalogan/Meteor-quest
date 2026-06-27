@@ -217,13 +217,37 @@ function TechMode({ tech }: { tech: ReturnType<typeof listTech> }) {
  * variety is visible at a glance. Enumerated from content — a newly-tagged tech appears
  * automatically, no per-prop wiring.
  */
+/**
+ * Mounts its (WebGL) child only while the tile is near the viewport. Mobile browsers cap
+ * concurrent WebGL contexts (~8); the gallery has 16 tiles, so always-on per-tile canvases
+ * blew past the cap and most tiles rendered blank (one showed a context-lost icon). With an
+ * IntersectionObserver only the few tiles in/near view hold a live context at once; the rest
+ * are a cheap placeholder until you scroll to them.
+ */
+function LazyCanvasTile({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => setNear(entries[0]?.isIntersecting ?? false), { rootMargin: "150px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div ref={ref} data-testid="prop-tile-slot" style={{ height: 200 }}>
+      {near ? children : null}
+    </div>
+  );
+}
+
 function TechPropsGalleryMode({ frozen }: { frozen: boolean }) {
   const specimens = useMemo(() => listTechProps(), []);
   const tints = useMemo(() => listBiomes().map((b) => b.color), []);
   return (
     <div
       data-testid="props-gallery"
-      style={{ position: "absolute", inset: 0, overflow: "auto", padding: 16, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 16, alignContent: "start" }}
+      style={{ position: "absolute", inset: 0, overflow: "auto", padding: 16, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gridAutoRows: "max-content", gap: 16, alignContent: "start" }}
     >
       {specimens.map(({ tech, prop }, i) => {
         const Comp = PROP_COMPONENTS[prop.kind];
@@ -235,7 +259,7 @@ function TechPropsGalleryMode({ frozen }: { frozen: boolean }) {
             data-testid={`prop-cell-${prop.kind}`}
             style={{ margin: 0, border: BORDER, borderRadius: 10, overflow: "hidden", background: "#070b13" }}
           >
-            <div style={{ height: 200 }}>
+            <LazyCanvasTile>
               <Canvas frameloop={frozen ? "demand" : "always"} camera={{ position: [2.4, 1.6, 2.8], fov: 42 }}>
                 <ambientLight intensity={0.5} />
                 <hemisphereLight color="#9fb4ff" groundColor="#0a0c14" intensity={0.4} />
@@ -244,7 +268,7 @@ function TechPropsGalleryMode({ frozen }: { frozen: boolean }) {
                   <Comp tint={tint} reducedMotion={false} />
                 </group>
               </Canvas>
-            </div>
+            </LazyCanvasTile>
             <figcaption style={{ padding: 12, borderTop: BORDER }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                 <span style={{ width: 14, height: 14, borderRadius: 3, background: tint }} />
