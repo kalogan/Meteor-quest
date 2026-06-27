@@ -28,7 +28,9 @@ function freshSeed(): number {
 
 export function VictoryOverlay() {
   const won = useSim((s) => s.game.objectives.won);
-  const stats = useSim((s) => victoryStats(s.game));
+  // Select the stable `game` reference — NOT `victoryStats(s.game)`, which returns a
+  // new object every call and makes useSyncExternalStore loop forever (React #185).
+  const game = useSim((s) => s.game);
   const [dismissed, setDismissed] = useState(false);
 
   // Reset the dismissal when the win goes away (New Game), so a new victory re-shows.
@@ -38,6 +40,7 @@ export function VictoryOverlay() {
 
   if (!won || dismissed) return null;
 
+  const stats = victoryStats(game);
   const keepPlaying = () => setDismissed(true);
 
   const newGame = () => {
