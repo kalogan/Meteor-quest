@@ -11,7 +11,9 @@ export function App() {
   useGameLoop();
   return (
     <div style={{ position: "fixed", inset: 0 }}>
-      <Canvas camera={{ position: [0, 14, 26], fov: 50 }}>
+      {/* Initial camera is a sensible default; the CameraRig (in WorldView) takes
+          over as the default camera and drives the continuous zoom. */}
+      <Canvas camera={{ position: [6, 5, 9], fov: 50, near: 0.1, far: 2000 }}>
         <WorldView />
       </Canvas>
       <Hud />

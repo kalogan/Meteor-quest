@@ -1,47 +1,43 @@
-import { useRef } from "react";
-import { useFrame } from "@react-three/fiber";
-import type { Group } from "three";
-import { getContentPack } from "@meteor/shared";
-import type { Planet } from "@meteor/shared";
+import { useEffect } from "react";
+import { Stars } from "@react-three/drei";
 import { useSim } from "../sim/store";
+import { useSelection } from "../sim/selection";
+import { GalaxyView } from "./GalaxyView";
+import { CameraRig } from "./CameraRig";
 
 /**
- * PLACEHOLDER God-view (builder #5 replaces with the continuous-zoom camera rig,
- * stylized low-poly planets, fog visualization, and the galaxy/system/planet
- * layers). It already mounts REAL sim state so the preview harness can reuse it.
+ * The God-view composition root. Owns the continuous-zoom rig and the world layers
+ * (galaxy -> system -> planet -> continent -> city), all driven by the AUTHORITATIVE
+ * sim state. Fog is enforced inside the layers (see GalaxyView): we never render
+ * what the sim hides.
+ *
+ * The camera lives in ONE continuous space — the player zooms smoothly across
+ * scales and clicks to frame; selection + zoom tier flow to the HUD via the
+ * selection store. Lighting that follows the camera is in App; star illumination
+ * comes from each system's star (see SystemView).
  */
-const pack = getContentPack();
-
-function biomeColor(p: Planet): string {
-  if (!p.scanned) return "#3a3f4b"; // fog: unknown until scanned
-  return pack.biomes.find((b) => b.id === p.biome)?.color ?? "#888888";
-}
-
-function PlanetMesh({ planet, x }: { planet: Planet; x: number }) {
-  const ref = useRef<Group>(null);
-  useFrame((_, dt) => {
-    if (ref.current) ref.current.rotation.y += dt * 0.3;
-  });
-  return (
-    <group ref={ref} position={[x, 0, 0]}>
-      <mesh>
-        <icosahedronGeometry args={[planet.settled ? 1.8 : 1.3, 1]} />
-        <meshStandardMaterial flatShading color={biomeColor(planet)} />
-      </mesh>
-    </group>
-  );
-}
-
 export function WorldView() {
-  const planets = useSim((s) => s.game.planets);
-  const list = Object.values(planets);
+  const game = useSim((s) => s.game);
+  const select = useSelection((s) => s.select);
+
+  // Open framed on the cradle planet so the player starts at home, mid-zoom.
+  const cradleId = game.cradlePlanetId;
+  useEffect(() => {
+    select(cradleId, "planet");
+  }, [cradleId, select]);
+
   return (
     <>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[10, 12, 6]} intensity={1.2} />
-      {list.map((p, i) => (
-        <PlanetMesh key={p.id} planet={p} x={(i - (list.length - 1) / 2) * 5} />
-      ))}
+      {/* Deep-space backdrop; the actual fog is per-entity, state-driven. */}
+      <color attach="background" args={["#05060a"]} />
+      <Stars radius={200} depth={80} count={2500} factor={3} saturation={0} fade speed={0.4} />
+
+      {/* Soft fill so unlit/back faces of low-poly bodies still read. */}
+      <ambientLight intensity={0.35} />
+      <hemisphereLight color="#9fb4ff" groundColor="#0a0c14" intensity={0.3} />
+
+      <GalaxyView game={game} />
+      <CameraRig game={game} />
     </>
   );
 }
