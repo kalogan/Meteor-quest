@@ -2,6 +2,27 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Surface knobs as live configs + Tier 2 walkable avatar (tasks #46–47) — done, verified
+- CONFIG EXPOSURE: every surface dive/roam tuning constant → `sim/surfaceConfig.ts`
+  (useSurfaceConfig store, defaults == the inlined values, behaviour unchanged). SurfaceView
+  + CameraRig read it; preview 'Surface' mode gains a 'Surface knobs' panel (SurfaceTuner) —
+  14 live sliders (Terrain/Look/Camera/Roam) + Reset. Shipped game uses defaults. Terrain
+  height field + mesh builder factored to `world/surfaceTerrain.ts` (shared).
+- TIER 2 AVATAR (preview-only 'Avatar' mode; the shipped dive/roam stays a CAMERA): a
+  low-poly SPACE-SUIT avatar (helmet+visor, life-support pack, swinging limbs — SurfaceAvatar)
+  walks a terrain patch under REAL per-planet gravity, third-person orbit camera.
+  - `world/planetSurface.ts`: gravity + grip per world from biome+seed (ice ~0.3g floaty +
+    slippery; rock ~1.6g heavy). Each planet distinct + deterministic.
+  - `preview/AvatarMode.tsx`: physics (camera-relative WASD, grip-damped friction → low-grip
+    slides, gravity + Space jump, ground-follow on the shared height field) + world picker +
+    gravity/grip readout. window.__avatar exposed for smokes.
+- Verified: gate GREEN; surface screenshot (knobs panel at defaults, unchanged); avatar smoke
+  — walks 1.27u on W; low-g ICE jump apex 3.78u vs heavy ROCK 0.67u (~5.6×); console CLEAN;
+  suit + ice/rock worlds screenshots reviewed.
+- FOLLOW-UPS: avatar is sandbox-only (not in the shipped loop); a real on-screen touch move
+  control; gravity/grip exposed in the tuner too; tune feel (accel/friction/jump). Roam +
+  avatar both stay cosmetic — never sim state.
+
 ## Surface roam — Tier 1.5 (task #45) — done, verified
 - Polish on the landed roam:
   - Re-leveling now triggers on HORIZONTAL look-target translation (project out the up
