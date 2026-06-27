@@ -4,6 +4,7 @@ import type { GameState, StarSystem } from "@meteor/shared";
 import { useSelection } from "../sim/selection";
 import { PALETTE } from "./palette";
 import { SystemView } from "./SystemView";
+import { ThreatLayer } from "./ThreatView";
 import { systemPosition } from "./layout";
 
 /**
@@ -43,6 +44,9 @@ export function GalaxyView({ game }: { game: GameState }) {
           <FogBlip key={system.id} system={system} />
         ),
       )}
+
+      {/* Telegraphed incoming threats, readable from the galaxy band down. */}
+      <ThreatLayer game={game} />
     </group>
   );
 }

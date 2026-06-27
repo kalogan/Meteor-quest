@@ -4,7 +4,12 @@ import { CameraControls } from "@react-three/drei";
 import type { CameraControlsImpl } from "@react-three/drei";
 import type { GameState } from "@meteor/shared";
 import { useSelection } from "../sim/selection";
-import { framingDistance, resolveWorldPosition, tierForDistance } from "./layout";
+import {
+  framingDistance,
+  galaxyCenter,
+  resolveWorldPosition,
+  tierForDistance,
+} from "./layout";
 
 /**
  * The continuous-zoom rig — THE signature mechanic. One CameraControls instance
@@ -35,7 +40,16 @@ export function CameraRig({ game }: { game: GameState }) {
   useEffect(() => {
     const cc = controls.current;
     if (!cc) return;
-    if (!selectedId || !selectedKind) return;
+
+    // Deselecting (click empty space) zooms ALL the way out to the galaxy band,
+    // framing the whole galaxy — the top of the continuous zoom (galaxy map view).
+    if (!selectedId || !selectedKind) {
+      const [gx, gy, gz] = galaxyCenter(game);
+      const gd = framingDistance("galaxy");
+      cc.setLookAt(gx + gd * 0.2, gy + gd * 0.45, gz + gd * 0.85, gx, gy, gz, true);
+      return;
+    }
+
     const target = resolveWorldPosition(game, selectedId, selectedKind);
     if (!target) return; // fogged / unresolved: don't move
     const dist = framingDistance(selectedKind);
