@@ -84,6 +84,39 @@ export const DefenseConfigSchema = z.object({
 });
 export type DefenseConfig = z.infer<typeof DefenseConfigSchema>;
 
+/**
+ * [objectives] A completion condition, evaluated against GameState each tick by the
+ * sim. Leaf conditions + a one-level `all` (AND) for compound goals like the victory.
+ */
+const LEAF_CONDITIONS = [
+  z.object({ kind: z.literal("orbitalLaunched") }),
+  z.object({ kind: z.literal("researchStarted") }),
+  z.object({ kind: z.literal("tier"), tier: TierIdSchema }), // authorityTier >= tier
+  z.object({ kind: z.literal("tech"), techId: z.string().min(1) }), // tech unlocked
+  z.object({ kind: z.literal("settledCount"), count: z.number().int().positive() }),
+  z.object({ kind: z.literal("settledInSystems"), count: z.number().int().positive() }),
+  z.object({ kind: z.literal("discoveredSystems"), count: z.number().int().positive() }),
+  z.object({ kind: z.literal("scannedCount"), count: z.number().int().positive() }),
+  z.object({ kind: z.literal("resource"), resource: ResourceIdSchema, amount: z.number().positive() }),
+] as const;
+
+export const ObjectiveConditionSchema = z.discriminatedUnion("kind", [
+  ...LEAF_CONDITIONS,
+  z.object({ kind: z.literal("all"), of: z.array(z.discriminatedUnion("kind", LEAF_CONDITIONS)).min(1) }),
+]);
+export type ObjectiveCondition = z.infer<typeof ObjectiveConditionSchema>;
+
+/** [objectives] A guided goal — early ones onboard (teach a mechanic), later ones set
+ * the meta-goals; exactly the `victory` one wins the game when complete. */
+export const ObjectiveSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  condition: ObjectiveConditionSchema,
+  victory: z.boolean().optional(),
+});
+export type Objective = z.infer<typeof ObjectiveSchema>;
+
 export const ContentPackSchema = z.object({
   id: z.string().min(1),
   version: z.number().int().nonnegative(),
@@ -93,6 +126,8 @@ export const ContentPackSchema = z.object({
   /** [slice 2] optional; sim-core defaults apply when omitted. */
   galaxy: GalaxyConfigSchema.optional(),
   defense: DefenseConfigSchema.optional(),
+  /** [objectives] optional guided-goal chain; sim defaults to none when omitted. */
+  objectives: z.array(ObjectiveSchema).optional(),
 });
 export type ContentPack = z.infer<typeof ContentPackSchema>;
 
@@ -163,6 +198,28 @@ export function parseContentPack(raw: unknown): ContentPack {
       if (eff.kind === "unlockTier" && !reachable.has(t.id)) {
         throw new Error(`unlockTier(${eff.tier}) on ${t.id} is unreachable`);
       }
+    }
+  }
+
+  // ── Objectives: referential integrity + winnability ───────────────────────
+  if (pack.objectives && pack.objectives.length > 0) {
+    const objIds = new Set<string>();
+    const techRefOk = (c: ObjectiveCondition): void => {
+      const checkLeaf = (leaf: ObjectiveCondition) => {
+        if (leaf.kind === "tech" && !techIds.has(leaf.techId)) {
+          throw new Error(`objective condition references unknown tech ${leaf.techId}`);
+        }
+      };
+      if (c.kind === "all") c.of.forEach(checkLeaf);
+      else checkLeaf(c);
+    };
+    for (const o of pack.objectives) {
+      if (objIds.has(o.id)) throw new Error(`duplicate objective id ${o.id}`);
+      objIds.add(o.id);
+      techRefOk(o.condition);
+    }
+    if (!pack.objectives.some((o) => o.victory)) {
+      throw new Error("objective chain has no `victory` objective (the game is unwinnable)");
     }
   }
 

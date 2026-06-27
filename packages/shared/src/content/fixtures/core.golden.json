@@ -376,5 +376,105 @@
       "energy": 10
     },
     "defensePerBuild": 5
-  }
+  },
+  "objectives": [
+    {
+      "id": "obj_research",
+      "title": "Spark of Progress",
+      "description": "Begin researching a technology (open the Research panel and pick one).",
+      "condition": {
+        "kind": "researchStarted"
+      }
+    },
+    {
+      "id": "obj_continent",
+      "title": "Unite a Continent",
+      "description": "Research Federal Administration to reach continent-tier authority — your cities start running on governors.",
+      "condition": {
+        "kind": "tier",
+        "tier": "continent"
+      }
+    },
+    {
+      "id": "obj_planet",
+      "title": "Govern a World",
+      "description": "Reach planet-tier authority (research Planetary Government).",
+      "condition": {
+        "kind": "tier",
+        "tier": "planet"
+      }
+    },
+    {
+      "id": "obj_launch",
+      "title": "Reach for Orbit",
+      "description": "Research Orbital Launch and break free of the cradle.",
+      "condition": {
+        "kind": "orbitalLaunched"
+      }
+    },
+    {
+      "id": "obj_explore",
+      "title": "First Contact",
+      "description": "Grow your sensors and reach a neighbouring star system.",
+      "condition": {
+        "kind": "discoveredSystems",
+        "count": 2
+      }
+    },
+    {
+      "id": "obj_scan",
+      "title": "Survey a World",
+      "description": "Scan a newly-found planet to reveal its biome.",
+      "condition": {
+        "kind": "scannedCount",
+        "count": 2
+      }
+    },
+    {
+      "id": "obj_settle",
+      "title": "Plant a Flag",
+      "description": "Settle your first new world and claim its resource + spiff.",
+      "condition": {
+        "kind": "settledCount",
+        "count": 2
+      }
+    },
+    {
+      "id": "obj_system",
+      "title": "Command a System",
+      "description": "Reach system-tier authority (research System Command).",
+      "condition": {
+        "kind": "tier",
+        "tier": "system"
+      }
+    },
+    {
+      "id": "obj_interstellar",
+      "title": "Interstellar Empire",
+      "description": "Settle worlds across two different star systems.",
+      "condition": {
+        "kind": "settledInSystems",
+        "count": 2
+      }
+    },
+    {
+      "id": "obj_victory",
+      "title": "Found a Galactic Civilization",
+      "description": "Reach galaxy-tier authority and settle four worlds.",
+      "condition": {
+        "kind": "all",
+        "of": [
+          {
+            "kind": "tier",
+            "tier": "galaxy"
+          },
+          {
+            "kind": "settledCount",
+            "count": 4
+          }
+        ]
+      },
+      "victory": true
+    }
+  ]
 }

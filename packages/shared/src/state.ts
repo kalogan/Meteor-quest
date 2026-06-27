@@ -147,6 +147,9 @@ export interface GameState {
   events: ActiveEvent[];
   /** [journey] Active expeditions in flight between systems (usually 0–1 in the slice). */
   journeys: Record<string, Journey>;
+  /** [objectives] Guided-goal progress: completed objective ids + whether the victory
+   * objective has been met. The chain itself is authored content. */
+  objectives: { completed: string[]; won: boolean };
   log: LogEntry[];
 }
 

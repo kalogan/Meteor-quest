@@ -10,7 +10,8 @@ const SAVE_KEY = "meteor-quest:save";
 // Bump on any GameState shape change so stale saves are discarded (load → null →
 // fresh game) instead of resuming a state missing newly-required fields.
 // v2: added GameState.journeys (expeditions).
-const SAVE_VERSION = 2;
+// v3: added GameState.objectives (guided-goal progress).
+const SAVE_VERSION = 3;
 
 interface SaveEnvelope {
   version: number;

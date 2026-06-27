@@ -118,3 +118,28 @@ God-view, **watch-it-fly with light steering** (no piloting/cockpit):
 `launchJourney` / `steerJourney` / `abortJourney`. Deterministic (sim owns the
 motion; steering arrives as commands in the tick stream). Save version bumped (v2)
 since the state shape changed.
+
+---
+
+## Objectives — goals + onboarding (making it a game)
+
+One authored chain of objectives serves three jobs: the **early** ones onboard
+(teach a mechanic, with a "Next: …" nudge), the **middle** ones are meta-goals, and
+the **final** one (`victory: true`) wins the game. Authored as DATA in content, so the
+guided arc is tunable without code.
+
+- **Condition** (data, evaluated against GameState each tick by the sim): leaf kinds
+  `orbitalLaunched` / `researchStarted` / `tier` / `tech` / `settledCount` /
+  `settledInSystems` / `discoveredSystems` / `scannedCount` / `resource`, plus a
+  one-level `all` (AND) for the compound victory.
+- The sim's `runObjectives` marks each pending objective complete when its condition
+  holds, and sets `objectives.won` when the `victory` objective completes. Pure +
+  deterministic; progress persists.
+- The chain (onboarding → goals → victory): research → continent tier → planet tier →
+  orbital launch → discover a neighbour → scan a world → settle a world → system tier
+  → settle across two systems → **(victory)** galaxy tier + 4 worlds.
+- UI: an Objectives HUD panel (current + checklist + hint), a first-time intro, and a
+  victory overlay in the shell when `won`.
+
+**Contract delta (additive):** `ObjectiveSchema`/`ObjectiveConditionSchema` + optional
+`ContentPack.objectives`; `GameState.objectives {completed[], won}`. Save bumped (v3).
