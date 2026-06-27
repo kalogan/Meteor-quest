@@ -185,6 +185,68 @@ describe("threats: planet destruction + authority demotion", () => {
   });
 });
 
+describe("threats: telegraph window (slice 2)", () => {
+  it("spawned events record spawnedAtTick alongside resolvesAtTick", () => {
+    const after = tickUntilEvent(launched(2));
+    expect(after.events.length).toBeGreaterThan(0);
+    const evt = after.events[0]!;
+    expect(evt.spawnedAtTick).toBeDefined();
+    expect(evt.spawnedAtTick!).toBeLessThan(evt.resolvesAtTick);
+  });
+});
+
+describe("threats: local defense resolution (slice 2)", () => {
+  /** A two-planet system-tier empire with a settled frontier planet target. */
+  function frontier(seed = 1): { state: GameState; target: string } {
+    const s = launched(seed);
+    const target = "planet-neighbor-0";
+    s.planets[target]!.settled = true;
+    s.authorityTier = "system";
+    return { state: s, target };
+  }
+
+  function meteorAt(s: GameState, target: string, severity: number): void {
+    s.events.push({
+      id: "evt-local",
+      kind: "meteor",
+      targetId: target,
+      spawnedAtTick: s.tick,
+      resolvesAtTick: s.tick,
+      severity,
+      mitigated: false,
+    });
+  }
+
+  it("an undefended frontier planet falls to a threat that a defended one survives", () => {
+    // Severity tuned just above the empire baseline so LOCAL defense is decisive.
+    const baseline = playerDefense(frontier().state); // empire-wide figure
+    const severity = baseline + 4;
+
+    const undef = frontier();
+    meteorAt(undef.state, undef.target, severity);
+    resolveDueEvents(undef.state);
+    expect(undef.state.planets[undef.target]!.settled).toBe(false); // lost
+
+    const defended = frontier();
+    // Build local defense onto the frontier planet — enough to repel.
+    defended.state.planets[defended.target]!.defense = 10;
+    meteorAt(defended.state, defended.target, severity);
+    resolveDueEvents(defended.state);
+    expect(defended.state.planets[defended.target]!.settled).toBe(true); // survived
+  });
+
+  it("system-level defense umbrellas the planets inside it", () => {
+    const baseline = playerDefense(frontier().state);
+    const severity = baseline + 4;
+    const s = frontier();
+    // No planet defense, but the parent system is fortified.
+    s.state.systems["sys-neighbor"]!.defense = 12;
+    meteorAt(s.state, s.target, severity);
+    resolveDueEvents(s.state);
+    expect(s.state.planets[s.target]!.settled).toBe(true);
+  });
+});
+
 describe("threats: spawn caps", () => {
   it("never exceeds the active-event cap", () => {
     const after = tickN(launched(42), 500);

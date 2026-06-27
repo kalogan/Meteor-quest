@@ -115,6 +115,72 @@ describe("economy: governor aggregation (signature mechanic)", () => {
   });
 });
 
+describe("economy: top-of-ladder aggregation (slice 2)", () => {
+  it("at system tier each city follows its SYSTEM's policy", () => {
+    const s = createInitialState(3);
+    const ids = Object.keys(s.cities);
+    const city = s.cities[ids[0]!]!;
+    city.focus = "minerals";
+    s.continents[city.continentId]!.policy = "minerals";
+    s.planets[s.continents[city.continentId]!.planetId]!.policy = "minerals";
+    s.systems["sys-home"]!.policy = "research"; // system overrides everything below it
+    s.authorityTier = "system";
+    expect(effectiveFocus(s, ids[0]!)).toBe("research");
+  });
+
+  it("at galaxy tier every city follows the EMPIRE policy", () => {
+    const s = createInitialState(3);
+    const ids = Object.keys(s.cities);
+    s.systems["sys-home"]!.policy = "research";
+    s.empirePolicy = "energy"; // empire overrides the system
+    s.authorityTier = "galaxy";
+    expect(effectiveFocus(s, ids[0]!)).toBe("energy");
+  });
+
+  it("system/galaxy aggregation CHANGES outputs vs planet tier", () => {
+    const base = createInitialState(5);
+    for (const c of Object.values(base.cities)) c.focus = "minerals";
+    for (const p of Object.values(base.planets)) p.policy = "minerals";
+    for (const sys of Object.values(base.systems)) sys.policy = "research";
+    base.empirePolicy = "energy";
+
+    const planetState = structuredClone(base);
+    planetState.authorityTier = "planet";
+    runEconomy(planetState);
+
+    const systemState = structuredClone(base);
+    systemState.authorityTier = "system";
+    runEconomy(systemState);
+
+    const galaxyState = structuredClone(base);
+    galaxyState.authorityTier = "galaxy";
+    runEconomy(galaxyState);
+
+    expect(planetState.rates.minerals).toBeGreaterThan(0);
+    expect(systemState.rates.research).toBeGreaterThan(0);
+    expect(systemState.rates.minerals).toBe(0);
+    expect(galaxyState.rates.energy).toBeGreaterThan(0);
+    expect(galaxyState.rates.research).toBe(0);
+  });
+
+  it("falls back gracefully when a higher-tier policy field is undefined", () => {
+    const s = createInitialState(3);
+    const ids = Object.keys(s.cities);
+    const city = s.cities[ids[0]!]!;
+    city.focus = "minerals";
+    s.continents[city.continentId]!.policy = "energy";
+    s.planets[s.continents[city.continentId]!.planetId]!.policy = "research";
+    // system tier but no system policy set → falls back to planet policy.
+    delete s.systems["sys-home"]!.policy;
+    s.authorityTier = "system";
+    expect(effectiveFocus(s, ids[0]!)).toBe("research");
+    // galaxy tier but no empirePolicy set → falls back to system (undefined) → planet.
+    delete s.empirePolicy;
+    s.authorityTier = "galaxy";
+    expect(effectiveFocus(s, ids[0]!)).toBe("research");
+  });
+});
+
 describe("economy: category multipliers", () => {
   it("unlocked production multiplier tech boosts its category", () => {
     const s = createInitialState(7);
