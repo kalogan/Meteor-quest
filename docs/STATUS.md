@@ -18,7 +18,11 @@ _Update every slice. A cold context should be able to resume from this file._
 | 4 | Content pack + golden fixtures | ✅ done (4 biomes/9 res/14 tech, fixtures) |
 | 5 | Client: God-view + continuous zoom | ✅ done (CameraControls rig, low-poly, fog) |
 | 6 | Client: HUD + tier-control panels | ✅ done (tier-adaptive control) |
-| 7 | Preview harness (expand) | in progress (builder dispatched) |
+| 7 | Preview harness (expand) | ✅ done (World/Biomes/Tech modes, seed knob, freeze, static index.html) |
+
+## ALL 7 SLICES COMPLETE — slice verified end-to-end
+- Full gate GREEN, 65 tests. Runtime smoke (game + preview, incl. new biome gallery
+  mounting the real PlanetView) console-clean. Static preview emits `dist-preview/index.html`.
 
 ## Vertical slice status: PLAYABLE
 The 3-in-1 arc is wired end-to-end: city-tier micro → research toward continent/planet
