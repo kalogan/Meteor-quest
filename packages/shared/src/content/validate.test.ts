@@ -18,7 +18,7 @@ describe("parseContentPack referential integrity", () => {
     const pack: ContentPack = parseContentPack(coreRaw);
     expect(pack.biomes).toHaveLength(4);
     expect(pack.resources).toHaveLength(9);
-    expect(pack.tech).toHaveLength(14);
+    expect(pack.tech).toHaveLength(16);
     // Every requiredResource is some biome's uniqueResource.
     const unique = new Set(pack.biomes.map((b) => b.uniqueResource));
     for (const t of pack.tech) {

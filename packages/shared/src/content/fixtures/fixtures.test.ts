@@ -18,9 +18,9 @@ describe("core content golden fixture", () => {
     expect(live).toEqual(golden);
   });
 
-  it("golden snapshot has the recorded shape (4 biomes / 9 resources / 14 tech)", () => {
+  it("golden snapshot has the recorded shape (4 biomes / 9 resources / 16 tech)", () => {
     expect(golden.biomes).toHaveLength(4);
     expect(golden.resources).toHaveLength(9);
-    expect(golden.tech).toHaveLength(14);
+    expect(golden.tech).toHaveLength(16);
   });
 });
