@@ -2,12 +2,13 @@ import { useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Stars } from "@react-three/drei";
 import { Quaternion, Vector3 } from "three";
-import type { Group, Mesh, PerspectiveCamera } from "three";
+import type { Group, PerspectiveCamera } from "three";
 import type { GameState, Planet } from "@meteor/shared";
 import { PALETTE } from "./palette";
 import { planetRadius } from "./layout";
 import { PlanetView } from "./PlanetView";
 import { MiningProbe } from "./MiningProbe";
+import { Ship } from "./Ship";
 
 /**
  * The cinematic runs in three scripted STAGES, derived from the active onboarding step
@@ -59,44 +60,6 @@ const _camOrbit = new Vector3();
 function easeInOut(t: number): number {
   const c = t < 0 ? 0 : t > 1 ? 1 : t;
   return c * c * (3 - 2 * c);
-}
-
-/**
- * The low-poly craft — mirrors the JourneyView ship silhouette (nose cone, fuselage,
- * engine bell + glow) so the intro ship reads as the same vessel that flies in-game.
- * The nose points down +Z; the parent group orients it along travel.
- */
-function IntroShip({ glowColor }: { glowColor: string }) {
-  const glow = useRef<Mesh>(null);
-  const hull = useRef<Group>(null);
-
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
-    if (glow.current) glow.current.scale.setScalar(0.85 + Math.sin(t * 12) * 0.15);
-    if (hull.current) hull.current.rotation.z = Math.sin(t * 1.4) * 0.16;
-  });
-
-  return (
-    <group ref={hull}>
-      <mesh position={[0, 0, 0.45]} rotation={[Math.PI / 2, 0, 0]}>
-        <coneGeometry args={[0.28, 0.8, 6]} />
-        <meshStandardMaterial color="#c9d4e8" metalness={0.5} roughness={0.4} flatShading />
-      </mesh>
-      <mesh position={[0, 0, -0.1]}>
-        <icosahedronGeometry args={[0.34, 0]} />
-        <meshStandardMaterial color="#8a97b4" metalness={0.4} roughness={0.5} flatShading />
-      </mesh>
-      <mesh position={[0, 0, -0.5]} rotation={[-Math.PI / 2, 0, 0]}>
-        <coneGeometry args={[0.22, 0.3, 6]} />
-        <meshStandardMaterial color="#566079" metalness={0.6} roughness={0.4} flatShading />
-      </mesh>
-      <mesh ref={glow} position={[0, 0, -0.78]}>
-        <sphereGeometry args={[0.26, 10, 10]} />
-        <meshBasicMaterial color={glowColor} transparent opacity={0.7} depthWrite={false} />
-      </mesh>
-      <pointLight position={[0, 0, -0.8]} color={glowColor} intensity={2.2} distance={6} />
-    </group>
-  );
 }
 
 /**
@@ -219,7 +182,7 @@ function IntroDirector({
   return (
     <>
       <group ref={ship}>
-        <IntroShip glowColor={PALETTE.glow} />
+        <Ship glowColor={PALETTE.glow} />
       </group>
 
       {/* The mining probe deploys only in the mining stage. It's parented to a rig that
