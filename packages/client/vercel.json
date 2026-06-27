@@ -1,6 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "//": "Preview-harness Vercel project. In Vercel, set this project's Root Directory to 'packages/client' so it reads THIS file (the game project uses the repo-root vercel.json instead). Vercel runs the install at the pnpm workspace root automatically.",
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm --filter @meteor/client build:preview",
   "outputDirectory": "dist-preview"
