@@ -1,7 +1,8 @@
-import { getContentPack, tierRank, type TierId } from "@meteor/shared";
-import type { GameState, TechNode } from "@meteor/shared";
+import { getContentPack, tierRank, RESOURCE_IDS, type ResourceId, type TierId } from "@meteor/shared";
+import type { City, GameState, TechNode } from "@meteor/shared";
 import { TICK_SECONDS } from "../clock.js";
 import { territoryAllowsTier } from "./tiers.js";
+import { effectiveFocus } from "./economy.js";
 
 /**
  * MINIMAL research (slice scaffold — builder #2/#3 deepen). Research points accrue
@@ -40,8 +41,7 @@ export function applyTechEffects(state: GameState, node: TechNode): void {
         break;
       case "unlockTier":
         if (territoryAllowsTier(state, eff.tier) && tierRank(eff.tier) > tierRank(state.authorityTier)) {
-          state.authorityTier = eff.tier;
-          state.log.push({ tick: state.tick, message: `Authority expanded to ${eff.tier} tier.` });
+          promoteTo(state, eff.tier);
         } else {
           // Tech unlocked but territory not yet sufficient; promotion pends (re-checked on growth).
           state.log.push({ tick: state.tick, message: `${node.name} researched — ${eff.tier} governance ready when territory grows.` });
@@ -54,6 +54,73 @@ export function applyTechEffects(state: GameState, node: TechNode): void {
   }
 }
 
+/**
+ * The resource a governor should adopt when it first takes over a tier: the most common
+ * focus its cities were already producing, with ties broken toward `research` (progression-
+ * friendly). Empty input → research.
+ */
+function dominantFocus(focuses: ResourceId[]): ResourceId {
+  const count = new Map<ResourceId, number>();
+  for (const f of focuses) count.set(f, (count.get(f) ?? 0) + 1);
+  const order: ResourceId[] = ["research", ...RESOURCE_IDS.filter((r) => r !== "research")];
+  let best: ResourceId = "research";
+  let bestN = -1;
+  for (const r of order) {
+    const n = count.get(r) ?? 0;
+    if (n > bestN) { bestN = n; best = r; }
+  }
+  return best;
+}
+
+/**
+ * When authority promotes to `tier`, the governor at that tier takes over production from
+ * the cities (see economy.effectiveFocus). Seed its policy from what those cities were
+ * ALREADY producing (captured in `focusByCity`, pre-promotion), so production continues
+ * seamlessly instead of snapping to the worldgen default and silently flat-lining research.
+ * The player can still change the governor policy afterward.
+ */
+function seedGovernorOnPromotion(state: GameState, tier: TierId, focusByCity: Record<string, ResourceId>): void {
+  const focusesWhere = (pred: (c: City) => boolean): ResourceId[] =>
+    Object.values(state.cities).filter(pred).map((c) => focusByCity[c.id]).filter((f): f is ResourceId => Boolean(f));
+  const planetOf = (c: City) => {
+    const cont = state.continents[c.continentId];
+    return cont ? state.planets[cont.planetId] : undefined;
+  };
+  if (tier === "continent") {
+    for (const cont of Object.values(state.continents)) {
+      const fs = cont.cityIds.map((id) => focusByCity[id]).filter((f): f is ResourceId => Boolean(f));
+      if (fs.length) cont.policy = dominantFocus(fs);
+    }
+  } else if (tier === "planet") {
+    for (const planet of Object.values(state.planets)) {
+      const fs = focusesWhere((c) => planetOf(c)?.id === planet.id);
+      if (fs.length) planet.policy = dominantFocus(fs);
+    }
+  } else if (tier === "system") {
+    for (const sys of Object.values(state.systems)) {
+      const fs = focusesWhere((c) => planetOf(c)?.systemId === sys.id);
+      if (fs.length) sys.policy = dominantFocus(fs);
+    }
+  } else if (tier === "galaxy") {
+    const fs = Object.values(state.cities).map((c) => focusByCity[c.id]).filter((f): f is ResourceId => Boolean(f));
+    if (fs.length) state.empirePolicy = dominantFocus(fs);
+  }
+}
+
+/**
+ * Promote authority to `tier`: capture what each city is producing UNDER THE OLD TIER, set
+ * the new tier, then seed the new governor from that focus so production continues seamlessly
+ * (no silent research flat-line). The SINGLE promotion path — both tech-completion
+ * (applyTechEffects) and territory-growth (reevaluateTierPromotion) route through here.
+ */
+function promoteTo(state: GameState, tier: TierId): void {
+  const focusByCity: Record<string, ResourceId> = {};
+  for (const c of Object.values(state.cities)) focusByCity[c.id] = effectiveFocus(state, c.id);
+  state.authorityTier = tier;
+  seedGovernorOnPromotion(state, tier, focusByCity);
+  state.log.push({ tick: state.tick, message: `Authority expanded to ${tier} tier.` });
+}
+
 /** Re-check pending tier promotions after territory changes (e.g. settling a planet). */
 export function reevaluateTierPromotion(state: GameState): void {
   const pack = getContentPack();
@@ -63,8 +130,7 @@ export function reevaluateTierPromotion(state: GameState): void {
       (t) => state.research.unlocked.includes(t.id) && t.effects.some((e) => e.kind === "unlockTier" && e.tier === tier),
     );
     if (techUnlocked && territoryAllowsTier(state, tier) && tierRank(tier) > tierRank(state.authorityTier)) {
-      state.authorityTier = tier;
-      state.log.push({ tick: state.tick, message: `Authority expanded to ${tier} tier.` });
+      promoteTo(state, tier);
     }
   }
 }

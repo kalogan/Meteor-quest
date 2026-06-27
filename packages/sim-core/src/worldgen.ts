@@ -152,6 +152,48 @@ export function createInitialState(seed: number): GameState {
     defense: 0,
   };
 
+  // ── A second GUARANTEED-near system, so every seed is winnable via the OBVIOUS path ──
+  // Without this, only Vega (cradle + 2 planets = 3 worlds) is reliably reachable with the
+  // ungated tech (deep sensors ~130 + warp range ~190); the 4th world for victory then
+  // depended on a random scatter landing in reach (≈8% of seeds had none, and most others
+  // only via an opaque silicate→long-range-sensor detour). This sits inside that envelope
+  // (≤ deep-sensor reach AND ≤ warp range) and well clear of Vega, so settling cradle +
+  // Vega's 2 + these reaches the 4-world goal by simply teching sensors+warp and expanding.
+  const nearBiomes: Planet["biome"][] = ["sand", "rock"];
+  const nearPlanetIds: string[] = [];
+  nearBiomes.forEach((biome, idx) => {
+    const pid = `planet-frontier-${idx}`;
+    planets[pid] = {
+      id: pid,
+      name: `Frontier Reach ${idx + 1}`,
+      systemId: "sys-near",
+      biome,
+      orbit: { radius: 6 + idx * 4, angle: rng.range(0, Math.PI * 2) },
+      continentIds: [],
+      scanned: false,
+      settled: false,
+      policy: "minerals",
+      defense: 0,
+    };
+    nearPlanetIds.push(pid);
+  });
+  // Opposite side of the disc from Vega (+ seeded jitter) so the two near systems read as
+  // distinct places; distance 108–120 keeps it inside the ungated sensor/range envelope.
+  const vegaAngle = Math.atan2(20, 90);
+  const nearAngle = vegaAngle + Math.PI + rng.range(-0.6, 0.6);
+  const nearDist = 108 + rng.range(0, 12);
+  const nearPos = { x: Math.cos(nearAngle) * nearDist, y: rng.range(-10, 10), z: Math.sin(nearAngle) * nearDist };
+  systems["sys-near"] = {
+    id: "sys-near",
+    name: "Proxima Reach",
+    position: nearPos,
+    distanceFromHome: Math.hypot(nearPos.x, nearPos.y, nearPos.z),
+    planetIds: nearPlanetIds,
+    discovered: false,
+    policy: "minerals",
+    defense: 0,
+  };
+
   // ── Scatter the rest of the galaxy (deterministic, separation-respecting) ─────
   // Home + the slice-1 neighbor are kept EXACTLY as above so slice-1 progression +
   // tests still hold; we only ADD further systems out in galaxy space. systemCount
@@ -162,9 +204,11 @@ export function createInitialState(seed: number): GameState {
   const placed: StarSystem["position"][] = [
     systems["sys-home"].position,
     systems["sys-neighbor"].position,
+    systems["sys-near"].position,
   ];
-  // -2: home and neighbor already exist among the systemCount budget.
-  const extraCount = Math.max(0, cfg.systemCount - 2);
+  // -3: home, the slice-1 neighbor, and the guaranteed near system already exist
+  // among the systemCount budget; scatter the remainder freely.
+  const extraCount = Math.max(0, cfg.systemCount - 3);
   for (let i = 0; i < extraCount; i++) {
     const sysId = `sys-${i}`;
     const sysRng = galaxyRng.fork(i + 1);

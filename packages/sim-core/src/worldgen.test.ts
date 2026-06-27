@@ -2,6 +2,25 @@ import { describe, expect, it } from "vitest";
 import { getContentPack } from "@meteor/shared";
 import { createInitialState, galaxyConfig, DEFAULT_GALAXY } from "./worldgen.js";
 
+describe("worldgen: winnability guarantee", () => {
+  // The 4-world victory must be reachable via the OBVIOUS tech path (ungated sensors ~130 +
+  // warp range ~190) on EVERY seed — i.e. enough remote planets sit within that envelope to
+  // settle 3 beyond the cradle. Regression for the "guaranteed near system" fix.
+  const REACH = 130; // ungated sensor cap (base 30 + basic 30 + deep 70); ≤ warp range 190
+  for (const seed of [0, 3, 7, 12, 23, 42, 99]) {
+    it(`seed ${seed} has ≥3 remote planets within obvious reach (${REACH})`, () => {
+      const s = createInitialState(seed);
+      const remoteInReach = Object.values(s.planets).filter((p) => {
+        const sys = s.systems[p.systemId];
+        return sys && sys.id !== s.homeSystemId && sys.distanceFromHome <= REACH;
+      });
+      expect(remoteInReach.length).toBeGreaterThanOrEqual(3); // + cradle = ≥4 worlds
+      expect(s.systems["sys-near"]).toBeDefined();
+      expect(s.systems["sys-near"]!.distanceFromHome).toBeLessThanOrEqual(REACH);
+    });
+  }
+});
+
 describe("worldgen: galaxy generation", () => {
   it("uses content galaxy config when present, else the default", () => {
     // galaxyConfig prefers authored content; DEFAULT_GALAXY is the fallback.

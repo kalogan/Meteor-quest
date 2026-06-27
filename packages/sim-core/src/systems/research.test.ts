@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createInitialState } from "../worldgen.js";
 import { applyCommand } from "../commands.js";
+import { tick } from "../engine.js";
 import { canResearch, findTech, reevaluateTierPromotion, applyTechEffects } from "./research.js";
 import { territoryAllowsTier } from "./tiers.js";
 import type { GameState } from "@meteor/shared";
@@ -94,5 +95,29 @@ describe("research: settling re-checks promotion (territory growth)", () => {
     expect(s.planets["planet-neighbor-0"]!.settled).toBe(true);
     expect(territoryAllowsTier(s, "system")).toBe(true);
     expect(s.authorityTier).toBe("system");
+  });
+});
+
+describe("research: governor inherits focus on promotion (no silent stall)", () => {
+  it("seeds the new governor from the cities' focus instead of the minerals default", () => {
+    const s = createInitialState(1);
+    for (const c of Object.values(s.cities)) c.focus = "research"; // the player is teching up
+    s.research.unlocked.push("basic_industry"); // federal_admin's prereq
+    applyTechEffects(s, findTech("federal_admin")!); // unlockTier: continent
+    expect(s.authorityTier).toBe("continent");
+    // The continent governor now drives production; it must adopt what the cities were
+    // already doing (research), NOT the worldgen 'minerals' default — otherwise promoting
+    // silently zeroes research (the trap this fixes).
+    for (const cont of Object.values(s.continents)) expect(cont.policy).toBe("research");
+  });
+
+  it("a city-focus player keeps researching across a tier promotion", () => {
+    let s = createInitialState(2);
+    for (const c of Object.values(s.cities)) c.focus = "research";
+    s.research.unlocked.push("basic_industry");
+    applyTechEffects(s, findTech("federal_admin")!); // → continent tier
+    s = tick(s);
+    expect(s.authorityTier).toBe("continent");
+    expect(s.rates.research).toBeGreaterThan(0); // research did NOT flat-line
   });
 });
