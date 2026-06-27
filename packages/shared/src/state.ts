@@ -62,6 +62,27 @@ export interface StarSystem {
   defense?: number;
 }
 
+/**
+ * [journey] An in-flight expedition between systems. God-view: the player launches
+ * it toward a target and the autopilot flies it there in real-time, but they can
+ * lightly nudge its heading en route (steerJourney). On arrival the target system is
+ * revealed for scanning/settling.
+ */
+export interface Journey {
+  id: string;
+  originSystemId: string;
+  targetSystemId: string;
+  /** Current position in galaxy space. */
+  pos: { x: number; y: number; z: number };
+  /** Current unit heading vector (direction of travel). */
+  heading: { x: number; y: number; z: number };
+  /** Galaxy units travelled per tick. */
+  speed: number;
+  /** Fuel remaining for this expedition (runs out → stranded/failed). */
+  fuel: number;
+  status: "enroute" | "arrived" | "failed";
+}
+
 export type EventKind = "pirateRaid" | "beast" | "meteor" | "supernova";
 
 export interface ActiveEvent {
@@ -124,6 +145,8 @@ export interface GameState {
   cities: Record<string, City>;
 
   events: ActiveEvent[];
+  /** [journey] Active expeditions in flight between systems (usually 0–1 in the slice). */
+  journeys: Record<string, Journey>;
   log: LogEntry[];
 }
 
@@ -144,4 +167,11 @@ export type Command =
   /** System-wide aggregate focus (governor) when authority sits at >= system. */
   | { type: "setSystemPolicy"; systemId: string; resource: ResourceId }
   /** Empire-wide aggregate focus (governor) at galaxy tier. */
-  | { type: "setEmpirePolicy"; resource: ResourceId };
+  | { type: "setEmpirePolicy"; resource: ResourceId }
+  // ── [journey] launch + light steering of an expedition ──────────────────────
+  /** Launch an expedition toward a reachable target system. */
+  | { type: "launchJourney"; targetSystemId: string }
+  /** Lightly nudge an in-flight expedition's heading. `turn` ∈ [-1, 1]. */
+  | { type: "steerJourney"; journeyId: string; turn: number }
+  /** Abort an expedition (turn back / recall). */
+  | { type: "abortJourney"; journeyId: string };

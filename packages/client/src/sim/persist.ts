@@ -7,7 +7,10 @@ import type { GameState } from "@meteor/shared";
  * version mismatch we discard the old save rather than crash on stale shapes.
  */
 const SAVE_KEY = "meteor-quest:save";
-const SAVE_VERSION = 1;
+// Bump on any GameState shape change so stale saves are discarded (load → null →
+// fresh game) instead of resuming a state missing newly-required fields.
+// v2: added GameState.journeys (expeditions).
+const SAVE_VERSION = 2;
 
 interface SaveEnvelope {
   version: number;

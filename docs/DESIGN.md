@@ -93,3 +93,28 @@ Builds on the slice-1 base (do not regress it). Four themes:
 Commands `buildDefense` / `setSystemPolicy` / `setEmpirePolicy`; optional content
 `GalaxyConfigSchema` + `DefenseConfigSchema`. Optional everywhere so the slice-1 base
 stays green; sim-core populates + reads them with defaults.
+
+---
+
+## Journey — flying to a new planet (visible real-time travel)
+
+Replaces the abstract "pay fuel → instantly discovered" with a **visible expedition**.
+God-view, **watch-it-fly with light steering** (no piloting/cockpit):
+
+- The player launches an expedition toward a **reachable** system (orbital launch +
+  ship range + fuel) → a `Journey` is created with a position, heading, speed, fuel.
+- Each tick the autopilot advances the ship toward the target (heading self-corrects
+  to the bearing); the player can **lightly nudge** the heading (`steerJourney`,
+  `turn ∈ [-1,1]`) — enough to weave/detour, not enough to fully fly it. Steering a
+  longer path costs more fuel (light tension).
+- **Arrival** (within an arrive-radius of the target) → `status: "arrived"`, the
+  target system is **discovered**, and the existing scan/settle flow takes over.
+- **Out of fuel / abort** → `status: "failed"` (stranded / recalled).
+- The world renders the ship (low-poly craft + engine trail) at `journey.pos`, the
+  camera **follows** the journey, and fog peels near arrival. Steering input must not
+  clash with the orbit-drag camera (use keys / an on-screen control).
+
+**Contract delta:** `Journey` interface, `GameState.journeys`, Commands
+`launchJourney` / `steerJourney` / `abortJourney`. Deterministic (sim owns the
+motion; steering arrives as commands in the tick stream). Save version bumped (v2)
+since the state shape changed.
