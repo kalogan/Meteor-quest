@@ -14,7 +14,7 @@ const packs: Array<readonly [string, unknown]> = [["core.json", coreRaw]];
  * the gate should surface but that are too pack-specific to live in the schema:
  *  - every biome's uniqueResource gates at least one tech (biome has a reason);
  *  - every requiredResource gate maps to a settle-able biome;
- *  - the full tier ladder (continent/planet/system) is granted by some tech.
+ *  - the full tier ladder (continent/planet/system/galaxy) is granted by some tech.
  */
 function lintCoherence(name: string, pack: ContentPack): string[] {
   const problems: string[] = [];
@@ -27,7 +27,7 @@ function lintCoherence(name: string, pack: ContentPack): string[] {
   const grantedTiers = new Set(
     pack.tech.flatMap((t) => t.effects.flatMap((e) => (e.kind === "unlockTier" ? [e.tier] : []))),
   );
-  for (const tier of ["continent", "planet", "system"] as const) {
+  for (const tier of ["continent", "planet", "system", "galaxy"] as const) {
     if (!grantedTiers.has(tier)) problems.push(`no tech grants the ${tier} tier (authority ladder is broken)`);
   }
   return problems.map((p) => `${name}: ${p}`);
