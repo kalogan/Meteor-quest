@@ -1,5 +1,4 @@
 import { DefensePanel } from "./DefensePanel";
-import { IntroDialog } from "./IntroDialog";
 import { JourneyPanel } from "./JourneyPanel";
 import { ObjectivesPanel } from "./ObjectivesPanel";
 import { ResourceHud } from "./ResourceHud";
@@ -28,6 +27,9 @@ import "./hud.css";
  * panels are accessible CollapsiblePanels (header button + aria-expanded/-controls),
  * default expanded on desktop and collapsed on phones.
  *
+ * Onboarding lives in the pre-game cinematic intro (see ui/intro/IntroCinematic), not
+ * the HUD, so the playing surface stays unobstructed.
+ *
  * Mounted by App.tsx (do not edit App here).
  */
 export function Hud() {
@@ -50,9 +52,6 @@ export function Hud() {
 
       {/* Threat alerts — always surfaced, never collapsed. */}
       <TacticalPanel />
-
-      {/* First-time onboarding welcome (shown once; never blocks the game). */}
-      <IntroDialog />
     </aside>
   );
 }

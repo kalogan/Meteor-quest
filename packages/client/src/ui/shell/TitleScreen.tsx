@@ -17,7 +17,8 @@ import { SettingsPanel } from "./SettingsPanel";
  * clickable above it.
  *
  * Actions drive the stores only (optimistic-cosmetic):
- *   - New Game → newGame(fresh seed) → set the configured default speed → phase "playing".
+ *   - New Game → newGame(fresh seed) → set the configured default speed → phase "intro"
+ *     (the cinematic onboarding, which then routes on to "playing").
  *   - Continue → phase "playing" (the store already loaded the save on boot); disabled
  *     unless a save exists.
  *   - Settings → the shared SettingsPanel dialog.
@@ -39,7 +40,10 @@ export function TitleScreen() {
     const { newGame, dispatch } = useSim.getState();
     newGame(freshSeed());
     dispatch({ type: "setTimeScale", scale: useSettings.getState().defaultSpeed });
-    setPhase("playing");
+    // Hand off to the cinematic intro (the sim is frozen until 'playing'); the intro's
+    // Begin/Skip routes on to 'playing'. The fresh world (incl. its cradle) is already
+    // installed, so the cinematic features the player's actual starting planet.
+    setPhase("intro");
   };
 
   const onContinue = () => {

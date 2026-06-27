@@ -219,47 +219,11 @@
   }
 }
 
-/* ---- First-time intro card ---- */
-/* Centered over the game; the card itself takes pointer events (it's outside the
-   .hud-overlay tree). Positioned via fixed + the centering offsets below. */
-.hud-intro-card {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: auto;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
-  z-index: 50;
-}
-.hud-intro-card :focus-visible {
-  outline: 2px solid var(--hud-focus);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-.hud-intro-dismiss {
-  appearance: none;
-  -webkit-appearance: none;
-  display: block;
-  width: 100%;
-  padding: 10px 16px;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-  background: var(--hud-accent);
-  border: 1px solid #5b8cff;
-  border-radius: 8px;
-  cursor: pointer;
-}
-.hud-intro-dismiss:hover {
-  background: #3672ff;
-}
-
 /* ---- Touch targets: >=44x44 on coarse pointers ---- */
 @media (pointer: coarse) {
   .hud-panel button,
   .hud-panel input,
-  .hud-collapsible__header,
-  .hud-intro-dismiss {
+  .hud-collapsible__header {
     min-height: 44px;
   }
   .hud-panel button {
