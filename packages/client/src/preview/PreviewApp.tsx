@@ -5,9 +5,10 @@ import type { GameState } from "@meteor/shared";
 // REUSE the REAL product components — never reimplementations.
 import { WorldView } from "../world/WorldView";
 import { PlanetView } from "../world/PlanetView";
+import { IntroCinematic } from "../ui/intro/IntroCinematic";
 import { useSim } from "../sim/store";
 import { useSelection } from "../sim/selection";
-import { biomeGallery, flightTestState, listTech } from "./dataSource";
+import { biomeGallery, flightTestState, listTech, previewState } from "./dataSource";
 
 /**
  * The preview harness — a backend-free, dual-consumer tool over the REAL product:
@@ -21,13 +22,14 @@ import { biomeGallery, flightTestState, listTech } from "./dataSource";
  * Production-truthful: it mounts the SAME WorldView/PlanetView the game ships and
  * the SAME content pack via the seam (dataSource) — never a fork "for preview".
  */
-type Mode = "world" | "biomes" | "tech" | "flight";
+type Mode = "world" | "biomes" | "tech" | "flight" | "intro";
 
 const MODES: { id: Mode; label: string }[] = [
   { id: "world", label: "World" },
   { id: "biomes", label: "Biomes" },
   { id: "tech", label: "Tech" },
   { id: "flight", label: "Flight" },
+  { id: "intro", label: "Intro" },
 ];
 
 const SURFACE = "#0a0e16";
@@ -44,10 +46,10 @@ export function PreviewApp() {
   const select = useSelection((s) => s.select);
 
   // Reseed the AUTHORITATIVE world through the same path the product uses, so
-  // seed 0 == the on-disk identity world and every seed is reproducible. Flight mode
-  // installs its OWN launch-ready world, so don't stomp it with a plain reset.
+  // seed 0 == the on-disk identity world and every seed is reproducible. Flight and
+  // Intro modes install their OWN world, so don't stomp it with a plain reset.
   useEffect(() => {
-    if (mode !== "flight") reset(seed);
+    if (mode !== "flight" && mode !== "intro") reset(seed);
   }, [seed, reset, mode]);
 
   const tech = useMemo(() => listTech(), []);
@@ -113,6 +115,7 @@ export function PreviewApp() {
         {mode === "biomes" && <BiomeGalleryMode seed={seed} frozen={frozen} onInspect={select} />}
         {mode === "tech" && <TechMode tech={tech} />}
         {mode === "flight" && <FlightMode seed={seed} frozen={frozen} />}
+        {mode === "intro" && <IntroMode seed={seed} />}
       </main>
     </div>
   );
@@ -284,6 +287,47 @@ function FlightMode({ seed, frozen }: { seed: number; frozen: boolean }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Intro mode — watch the SHIPPED cinematic onboarding and click through it. It installs
+ * a fresh seeded world (the same `previewState` New Game uses, so the cradle is the
+ * player's real starting planet) via setGame, then mounts the SAME IntroCinematic the
+ * shell does — no fork. onFinish replays from the start (bump the `run` key to remount
+ * the cinematic), and a persistent "Replay" button lets the Director re-run any time.
+ */
+function IntroMode({ seed }: { seed: number }) {
+  const setGame = useSim((s) => s.setGame);
+  const [run, setRun] = useState(0);
+
+  // Install / reinstall the fresh world on enter + seed change. Reset the run counter
+  // so a seed change also restarts the cinematic from the top.
+  useEffect(() => {
+    setGame(previewState(seed));
+    setRun(0);
+  }, [seed, setGame]);
+
+  return (
+    <div style={{ position: "absolute", inset: 0 }} data-testid="intro-mode">
+      {/* Remount on each run so the camera/curtain/steps replay from the start. */}
+      <IntroCinematic key={run} onFinish={() => setRun((r) => r + 1)} />
+
+      <button
+        data-testid="intro-replay"
+        aria-label="replay intro"
+        onClick={() => setRun((r) => r + 1)}
+        style={{
+          position: "absolute",
+          top: 12,
+          right: 12,
+          zIndex: 10,
+          ...tabStyle(false),
+        }}
+      >
+        Replay
+      </button>
     </div>
   );
 }
