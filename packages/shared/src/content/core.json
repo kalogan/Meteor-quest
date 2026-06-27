@@ -19,26 +19,26 @@
     { "id": "oremetal", "name": "Ore-Metal", "kind": "raw" }
   ],
   "tech": [
-    { "id": "basic_industry", "name": "Basic Industry", "category": "materials", "cost": 20, "effects": [{ "kind": "productionMultiplier", "category": "materials", "factor": 1.5 }] },
-    { "id": "refining", "name": "Refining", "category": "materials", "cost": 35, "prereqs": ["basic_industry"], "effects": [{ "kind": "unlockRefining", "resource": "alloy" }] },
-    { "id": "power_grid", "name": "Power Grid", "category": "energy", "cost": 35, "prereqs": ["basic_industry"], "effects": [{ "kind": "productionMultiplier", "category": "energy", "factor": 1.5 }] },
+    { "id": "basic_industry", "name": "Basic Industry", "category": "materials", "cost": 20, "effects": [{ "kind": "productionMultiplier", "category": "materials", "factor": 1.5 }], "prop": { "kind": "foundry", "placement": "ground" } },
+    { "id": "refining", "name": "Refining", "category": "materials", "cost": 35, "prereqs": ["basic_industry"], "effects": [{ "kind": "unlockRefining", "resource": "alloy" }], "prop": { "kind": "refinery", "placement": "ground" } },
+    { "id": "power_grid", "name": "Power Grid", "category": "energy", "cost": 35, "prereqs": ["basic_industry"], "effects": [{ "kind": "productionMultiplier", "category": "energy", "factor": 1.5 }], "prop": { "kind": "solar_array", "placement": "ground" } },
 
-    { "id": "federal_admin", "name": "Federal Administration", "category": "administration", "cost": 60, "prereqs": ["basic_industry"], "effects": [{ "kind": "unlockTier", "tier": "continent" }] },
-    { "id": "planetary_gov", "name": "Planetary Government", "category": "administration", "cost": 110, "prereqs": ["federal_admin", "refining"], "effects": [{ "kind": "unlockTier", "tier": "planet" }] },
-    { "id": "system_command", "name": "System Command", "category": "administration", "cost": 220, "prereqs": ["planetary_gov", "orbital_launch"], "effects": [{ "kind": "unlockTier", "tier": "system" }] },
-    { "id": "galactic_senate", "name": "Galactic Senate", "category": "administration", "cost": 360, "prereqs": ["system_command", "warp_basics"], "effects": [{ "kind": "unlockTier", "tier": "galaxy" }, { "kind": "productionMultiplier", "category": "administration", "factor": 1.5 }] },
+    { "id": "federal_admin", "name": "Federal Administration", "category": "administration", "cost": 60, "prereqs": ["basic_industry"], "effects": [{ "kind": "unlockTier", "tier": "continent" }], "prop": { "kind": "capitol", "placement": "ground" } },
+    { "id": "planetary_gov", "name": "Planetary Government", "category": "administration", "cost": 110, "prereqs": ["federal_admin", "refining"], "effects": [{ "kind": "unlockTier", "tier": "planet" }], "prop": { "kind": "gov_spire", "placement": "ground" } },
+    { "id": "system_command", "name": "System Command", "category": "administration", "cost": 220, "prereqs": ["planetary_gov", "orbital_launch"], "effects": [{ "kind": "unlockTier", "tier": "system" }], "prop": { "kind": "command_station", "placement": "orbit" } },
+    { "id": "galactic_senate", "name": "Galactic Senate", "category": "administration", "cost": 360, "prereqs": ["system_command", "warp_basics"], "effects": [{ "kind": "unlockTier", "tier": "galaxy" }, { "kind": "productionMultiplier", "category": "administration", "factor": 1.5 }], "prop": { "kind": "senate_ring", "placement": "orbit", "scale": 1.3 } },
 
-    { "id": "rocketry", "name": "Rocketry", "category": "propulsion", "cost": 75, "prereqs": ["power_grid", "refining"], "effects": [{ "kind": "shipRange", "delta": 40 }] },
-    { "id": "orbital_launch", "name": "Orbital Launch", "category": "propulsion", "cost": 140, "prereqs": ["rocketry", "planetary_gov"], "effects": [{ "kind": "orbitalLaunch" }, { "kind": "shipRange", "delta": 30 }] },
-    { "id": "warp_basics", "name": "Warp Fundamentals", "category": "propulsion", "cost": 240, "prereqs": ["orbital_launch"], "requiredResource": "oremetal", "effects": [{ "kind": "shipRange", "delta": 120 }, { "kind": "productionMultiplier", "category": "propulsion", "factor": 1.5 }] },
+    { "id": "rocketry", "name": "Rocketry", "category": "propulsion", "cost": 75, "prereqs": ["power_grid", "refining"], "effects": [{ "kind": "shipRange", "delta": 40 }], "prop": { "kind": "launchpad", "placement": "ground" } },
+    { "id": "orbital_launch", "name": "Orbital Launch", "category": "propulsion", "cost": 140, "prereqs": ["rocketry", "planetary_gov"], "effects": [{ "kind": "orbitalLaunch" }, { "kind": "shipRange", "delta": 30 }], "prop": { "kind": "shipyard", "placement": "orbit" } },
+    { "id": "warp_basics", "name": "Warp Fundamentals", "category": "propulsion", "cost": 240, "prereqs": ["orbital_launch"], "requiredResource": "oremetal", "effects": [{ "kind": "shipRange", "delta": 120 }, { "kind": "productionMultiplier", "category": "propulsion", "factor": 1.5 }], "prop": { "kind": "warp_gate", "placement": "orbit", "scale": 1.2 } },
 
-    { "id": "basic_sensors", "name": "Basic Sensors", "category": "sensors", "cost": 45, "prereqs": ["power_grid"], "effects": [{ "kind": "sensorRange", "delta": 30 }] },
-    { "id": "deep_sensors", "name": "Deep-Space Sensors", "category": "sensors", "cost": 130, "prereqs": ["basic_sensors", "rocketry"], "effects": [{ "kind": "sensorRange", "delta": 70 }] },
-    { "id": "long_range_array", "name": "Long-Range Array", "category": "sensors", "cost": 210, "prereqs": ["deep_sensors"], "requiredResource": "silicate", "effects": [{ "kind": "sensorRange", "delta": 110 }] },
-    { "id": "galactic_survey", "name": "Galactic Survey Net", "category": "sensors", "cost": 320, "prereqs": ["long_range_array", "warp_basics"], "effects": [{ "kind": "sensorRange", "delta": 160 }] },
+    { "id": "basic_sensors", "name": "Basic Sensors", "category": "sensors", "cost": 45, "prereqs": ["power_grid"], "effects": [{ "kind": "sensorRange", "delta": 30 }], "prop": { "kind": "antenna", "placement": "ground" } },
+    { "id": "deep_sensors", "name": "Deep-Space Sensors", "category": "sensors", "cost": 130, "prereqs": ["basic_sensors", "rocketry"], "effects": [{ "kind": "sensorRange", "delta": 70 }], "prop": { "kind": "dish_array", "placement": "ground" } },
+    { "id": "long_range_array", "name": "Long-Range Array", "category": "sensors", "cost": 210, "prereqs": ["deep_sensors"], "requiredResource": "silicate", "effects": [{ "kind": "sensorRange", "delta": 110 }], "prop": { "kind": "sensor_sat", "placement": "orbit" } },
+    { "id": "galactic_survey", "name": "Galactic Survey Net", "category": "sensors", "cost": 320, "prereqs": ["long_range_array", "warp_basics"], "effects": [{ "kind": "sensorRange", "delta": 160 }], "prop": { "kind": "survey_net", "placement": "orbit" } },
 
-    { "id": "fusion", "name": "Fusion Power", "category": "energy", "cost": 200, "prereqs": ["power_grid", "refining"], "requiredResource": "cryocrystal", "effects": [{ "kind": "productionMultiplier", "category": "energy", "factor": 2 }] },
-    { "id": "biolabs", "name": "Bio-Synthesis Labs", "category": "biotech", "cost": 180, "prereqs": ["planetary_gov"], "requiredResource": "biogel", "effects": [{ "kind": "productionMultiplier", "category": "biotech", "factor": 2 }, { "kind": "productionMultiplier", "category": "administration", "factor": 1.25 }] }
+    { "id": "fusion", "name": "Fusion Power", "category": "energy", "cost": 200, "prereqs": ["power_grid", "refining"], "requiredResource": "cryocrystal", "effects": [{ "kind": "productionMultiplier", "category": "energy", "factor": 2 }], "prop": { "kind": "reactor", "placement": "ground" } },
+    { "id": "biolabs", "name": "Bio-Synthesis Labs", "category": "biotech", "cost": 180, "prereqs": ["planetary_gov"], "requiredResource": "biogel", "effects": [{ "kind": "productionMultiplier", "category": "biotech", "factor": 2 }, { "kind": "productionMultiplier", "category": "administration", "factor": 1.25 }], "prop": { "kind": "biodome", "placement": "ground" } }
   ],
   "galaxy": { "systemCount": 7, "radius": 260, "minSeparation": 40 },
   "defense": { "buildCost": { "alloy": 10, "energy": 10 }, "defensePerBuild": 5 },

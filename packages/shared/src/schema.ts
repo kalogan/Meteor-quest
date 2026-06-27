@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { BIOME_IDS, RESOURCE_IDS, TECH_CATEGORIES, TIER_IDS } from "./ids.js";
+import { BIOME_IDS, PROP_KINDS, PROP_PLACEMENTS, RESOURCE_IDS, TECH_CATEGORIES, TIER_IDS } from "./ids.js";
 
 /**
  * Content schemas — the SAME schema the product (sim-core) validates with and the
@@ -47,6 +47,20 @@ export const TechEffectSchema = z.discriminatedUnion("kind", [
 ]);
 export type TechEffect = z.infer<typeof TechEffectSchema>;
 
+/**
+ * [tech props] The 3D structure a researched tech plants in the world. `kind` selects
+ * the procedural component (validated against the shared PROP_KINDS catalogue, so a
+ * typo or an unimplemented prop fails content-lint, not at render). `placement` decides
+ * whether it sits on the planet surface or rings the world in orbit. `scale` is an
+ * optional size multiplier (default 1) for tuning a prop's footprint without code.
+ */
+export const TechPropSchema = z.object({
+  kind: z.enum(PROP_KINDS),
+  placement: z.enum(PROP_PLACEMENTS),
+  scale: z.number().positive().optional(),
+});
+export type TechProp = z.infer<typeof TechPropSchema>;
+
 export const TechNodeSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -60,6 +74,8 @@ export const TechNodeSchema = z.object({
   /** A biome-unique resource that must be AVAILABLE to research this (forces exploration). */
   requiredResource: ResourceIdSchema.optional(),
   effects: z.array(TechEffectSchema).default([]),
+  /** [tech props] A 3D structure that appears on settled worlds once this tech is unlocked. */
+  prop: TechPropSchema.optional(),
 });
 export type TechNode = z.infer<typeof TechNodeSchema>;
 
@@ -138,6 +154,7 @@ export function parseContentPack(raw: unknown): ContentPack {
   const techIds = new Set(pack.tech.map((t) => t.id));
   const techCategories = new Set<string>(TECH_CATEGORIES);
   const uniqueResources = new Set(pack.biomes.map((b) => b.uniqueResource));
+  const propKinds = new Set<string>(); // [tech props] each structure belongs to one tech
 
   for (const b of pack.biomes) {
     if (!resourceIds.has(b.uniqueResource)) {
@@ -162,6 +179,14 @@ export function parseContentPack(raw: unknown): ContentPack {
       throw new Error(
         `tech ${t.id} requires ${t.requiredResource}, which is not any biome's uniqueResource (cannot gate settlement)`,
       );
+    }
+    // [tech props] A structure belongs to exactly one tech — so the world reads as a
+    // legible record of what you've researched (no two techs share a silhouette).
+    if (t.prop) {
+      if (propKinds.has(t.prop.kind)) {
+        throw new Error(`tech prop kind ${t.prop.kind} is claimed by more than one tech (must be unique)`);
+      }
+      propKinds.add(t.prop.kind);
     }
   }
 
