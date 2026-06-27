@@ -2,6 +2,20 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Tech props — mobile gallery WebGL fix (task #36) — done, verified
+- BUG (mobile, reported via screenshot): the "Tech props" gallery rendered blank tiles +
+  a context-lost icon. Cause: one `<Canvas>` per tile = 16 WebGL contexts; mobile browsers
+  cap concurrent contexts (~8), so most failed to init (desktop tolerated 16 by eviction).
+- FIX: lazy-mount each tile's canvas behind an IntersectionObserver (rootMargin 150px), so
+  only the few tiles in/near view hold a live context (mobile peak ~4 vs 16); the rest are
+  a placeholder until scrolled to. ALSO `gridAutoRows: max-content` on the grid — the empty
+  placeholder slots were being collapsed to ~29px by the grid row track (figure overflow
+  :hidden), so all 16 fit on screen at once and defeated the lazy-mount. (Tried drei `View`
+  / single shared context first; its rect-tracking misaligned in this scroll-container +
+  fixed-canvas layout — reverted for the simpler, predictable lazy-mount.)
+- Architect smoke at 390px: 16 tiles all render on scroll, PEAK 4 live canvases, console
+  CLEAN; desktop unchanged (axe 0, console CLEAN). Gate GREEN. Screenshots reviewed.
+
 ## Tech props — hover tooltip + intro foundry (tasks #33–35) — done, verified
 - "What built this?" HOVER: hovering a structure in the God-view pops a cursor-following
   card (structure name + blurb + the tech that built it, e.g. "Foundry · Built by Basic
