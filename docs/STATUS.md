@@ -2,6 +2,20 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Mobile + collapsible + WCAG pass (task #14) — done, verified
+- HUD is responsive (desktop corner-docks; phone = top status strip + bottom accordion
+  drawer, canvas stays visible), panels collapse/expand (collapsed-by-default on phone),
+  and accessible (reusable CollapsiblePanel with aria-expanded/-controls, landmarks,
+  focus-visible rings, 44px touch targets on coarse pointers, reduced-motion).
+- Architect verification (axe-core + Playwright at 390/768/1366px) caught two
+  green-but-broken issues the gate couldn't, both fixed:
+  1. Phone drawer was off-screen — inline `position:absolute` (theme.panel) beat the
+     media-query `position:static`; fixed with `!important`+`inset:auto` overrides.
+  2. axe color-contrast failures (serious) from `opacity` dimming on locked tech rows /
+     disabled buttons / tactical breakdown — replaced with explicit AA colors.
+- Re-verified: **axe 0 violations** on phone/tablet/desktop; collapse/expand works;
+  focus rings present. Gate GREEN (93 tests).
+
 ## Last known-green gate (after Slice 2)
 - `bash scripts/gate.sh` GREEN. Counts: shared **13** · sim-core **78** · client **2**
   = **93 passing**. Product + preview build OK.

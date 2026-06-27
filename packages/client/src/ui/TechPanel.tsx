@@ -71,8 +71,14 @@ export function TechPanel() {
                 border: "1px solid #1d2740",
                 borderRadius: 5,
                 padding: "6px 8px",
-                opacity: unlocked ? 0.55 : researchable || active ? 1 : 0.45,
-                background: active ? "rgba(43,108,255,0.12)" : "transparent",
+                // State is shown via explicit colors + the cost button's enabled
+                // styling and the "needs …" hint — NOT opacity. Opacity composites
+                // text toward the backdrop and fails WCAG contrast (see theme.ts).
+                background: active
+                  ? "rgba(43,108,255,0.12)"
+                  : unlocked
+                    ? "rgba(111,220,140,0.08)"
+                    : "transparent",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>

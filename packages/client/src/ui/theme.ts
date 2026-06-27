@@ -57,7 +57,8 @@ export function button(active = false, enabled = true): CSSProperties {
     cursor: enabled ? "pointer" : "not-allowed",
     fontWeight: active ? 700 : 400,
     fontSize: 12,
-    opacity: enabled ? 1 : 0.7,
+    // No opacity dimming for the disabled state — the explicit #9aa3b8 text on the
+    // button bg stays >=4.5:1, whereas opacity would composite it below threshold.
   };
 }
 

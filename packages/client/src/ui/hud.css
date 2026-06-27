@@ -139,7 +139,11 @@
     flex-wrap: wrap;
   }
   .hud-strip > .hud-panel {
-    position: static;
+    /* !important + inset:auto beat the inline `position:absolute` from theme.panel,
+       so the panels actually flow in the strip instead of staying corner-docked. */
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
     flex: 1 1 auto;
     min-width: 0;
   }
@@ -161,7 +165,10 @@
     overflow-y: auto;
   }
   .hud-drawer > .hud-panel {
-    position: static;
+    /* !important + inset:auto beat the inline `position:absolute` from theme.panel,
+       so the heavy panels stack in the bottom drawer instead of floating off-screen. */
+    position: static !important;
+    inset: auto !important;
     width: auto !important;
     max-width: none !important;
     transform: none !important;

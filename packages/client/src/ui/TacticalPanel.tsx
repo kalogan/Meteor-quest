@@ -137,7 +137,7 @@ export function TacticalPanel() {
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginBottom: 8 }}>
               <span style={subtle}>
                 defense ⛨ <b style={{ opacity: 1 }}>{total.toFixed(1)}</b>{" "}
-                <span style={{ opacity: 0.7 }}>({local.toFixed(0)} local + {baseline.toFixed(1)} empire)</span>
+                <span>({local.toFixed(0)} local + {baseline.toFixed(1)} empire)</span>
               </span>
               <span style={{ color: holds ? "#6fdc8c" : "#ff8a8a", fontWeight: 600 }}>
                 {holds ? "holds if fortified" : "outmatched"}
