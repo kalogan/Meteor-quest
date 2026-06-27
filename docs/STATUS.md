@@ -2,6 +2,34 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Tech props — structures per unlocked tech (tasks #28–32) — done, verified
+- The world now GROWS as you research: each tech carries an authored `prop` and, once
+  unlocked, that structure appears on EVERY settled world. 16 distinct procedural
+  low-poly props sharing the Ship/MiningProbe material language — 10 ground (foundry,
+  refinery, solar_array, reactor, capitol, gov_spire, antenna, dish_array, biodome,
+  launchpad) + 6 orbit (shipyard, command_station, senate_ring, warp_gate, sensor_sat,
+  survey_net). Data-driven: `prop {kind,placement,scale?}` on TechNode, kind validated
+  vs shared PROP_KINDS; parseContentPack enforces one tech per prop kind.
+- Seam (committed 039e81a): ids.PROP_KINDS/PROP_PLACEMENTS, TechProp schema + `prop`
+  field, all 16 techs tagged, golden fixture regenerated.
+- Render (ea0f5a6): `world/props/` component family + registry keyed by PROP_KIND +
+  shared materials.ts. `TechPropsLayer` reads `game.research.unlocked` → resolves each
+  tech.prop via content → plants GROUND props on the surface INSIDE PlanetView's spin
+  group (co-rotate, read as built) and rings ORBIT props on a slow-revolving orbit
+  OUTSIDE it. Per-planet seed (FNV-1a→mulberry32) drives arrangement yaw + size jitter;
+  biome tint is each prop's single accent — so colonies never look copy-pasted.
+  PlanetView mounts both (settled only); SystemView threads reducedMotion. Cosmetic,
+  deterministic, reduced-motion aware, NO fresh-object store selectors (#185-safe).
+- Preview: new "Tech props" gallery mounts every REAL component in isolation (enumerated
+  from content, tints cycle biome colors). preview/main.tsx exposes `window.__sim` for
+  headless in-world smokes (preview-only harness tooling). Active-tab color #2b6cff→
+  #2f66ea to clear AA (was 4.47:1).
+- Architect smoke: gallery 16 tiles render + console CLEAN + **axe 0 violations**;
+  in-world injection (16 tech unlocked, cradle + a 2nd settled world) renders props on
+  both, console CLEAN. Gate GREEN. Visual: gallery + world screenshots reviewed — 16
+  coherent silhouettes, world reads alive. Taste knobs: dish_array reads a bit blobby vs
+  the warp ring; ground-prop scale (0.16×r) / orbit radius (2.1×r) / ring speed (0.12).
+
 ## Home fleet in-game (task #27) — done, verified
 - After the intro, the God-view showed the cradle but NO ship (a ship only appeared
   during a journey). Added a persistent cosmetic HOME FLEET — your ship orbiting the
