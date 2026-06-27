@@ -3,6 +3,7 @@ import { canResearch, reevaluateTierPromotion } from "./systems/research.js";
 import { canTravel, fuelCost } from "./systems/travel.js";
 import { systemInSensorRange } from "./systems/fog.js";
 import { setEventResponse } from "./systems/threats.js";
+import { applyBuildDefense } from "./systems/defense.js";
 
 /**
  * Authoritative command reducer. Pure: clones state, applies one command, returns
@@ -86,6 +87,26 @@ export function applyCommand(prev: GameState, cmd: Command): GameState {
       }
       break;
     }
+    // ── [slice 2] tactical defense + top-of-ladder governors ──────────────────
+    case "buildDefense": {
+      // Spend the content defense cost (if affordable) to raise the target's local
+      // defensive strength — invest where the frontier is hot.
+      const planet = state.planets[cmd.targetId];
+      const system = state.systems[cmd.targetId];
+      if (applyBuildDefense(state, cmd.targetId)) {
+        const name = planet?.name ?? system?.name ?? cmd.targetId;
+        state.log.push({ tick: state.tick, message: `Reinforced defenses at ${name}.` });
+      }
+      break;
+    }
+    case "setSystemPolicy": {
+      const system = state.systems[cmd.systemId];
+      if (system) system.policy = cmd.resource;
+      break;
+    }
+    case "setEmpirePolicy":
+      state.empirePolicy = cmd.resource;
+      break;
   }
   return state;
 }

@@ -2,6 +2,7 @@ import { type EventKind } from "@meteor/shared";
 import type { ActiveEvent, GameState } from "@meteor/shared";
 import { createRng } from "../rng.js";
 import { territoryAllowsTier } from "./tiers.js";
+import { localDefense } from "./defense.js";
 
 /**
  * Threats — deterministic, seeded catastrophes + light skirmishes, resolved through
@@ -153,6 +154,7 @@ export function maybeSpawnEvent(state: GameState): void {
       id: `evt-${kind}-${state.tick}`,
       kind,
       targetId,
+      spawnedAtTick: state.tick,
       resolvesAtTick: state.tick + FUSE_TICKS[kind],
       severity,
       mitigated: false,
@@ -187,7 +189,11 @@ export function resolveDueEvents(state: GameState): void {
 
   for (const evt of due) {
     const response = eventResponse(evt);
-    let defense = baseDefense;
+    // Defending value at the target = empire baseline + the TARGET's LOCAL built
+    // defense (planet.defense / system.defense, a planet inheriting its system's
+    // defense). So investing defense on a frontier world actually repels threats
+    // there. The response modifier then scales the combined total.
+    let defense = baseDefense + localDefense(state, evt.targetId);
     let severity = evt.severity;
     let evacuated = false;
 

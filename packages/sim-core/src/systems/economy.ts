@@ -53,17 +53,32 @@ export function categoryMultipliers(state: GameState): Record<TechCategory, numb
  * city's own focus with their aggregate policy.
  *  - city tier      → city follows its own `focus`
  *  - continent tier → city follows its continent's `policy`
- *  - planet+        → city follows its planet's `policy`
+ *  - planet tier    → city follows its planet's `policy`
+ *  - system tier    → city follows its SYSTEM's `policy` (top: StarSystem.policy)
+ *  - galaxy tier    → city follows the EMPIRE's `policy` (GameState.empirePolicy)
+ *
+ * Higher-tier policy fields are optional on the contract; each rung falls back
+ * gracefully (system → planet → continent → city focus) when its field is undefined,
+ * so a partially-populated state never produces an undefined resource.
  */
 export function effectiveFocus(state: GameState, cityId: string): ResourceId {
   const city = state.cities[cityId];
   if (!city) return "minerals";
+  const continent = state.continents[city.continentId];
+  const planet = state.planets[continent?.planetId ?? ""];
   const rank = ["city", "continent", "planet", "system", "galaxy"].indexOf(state.authorityTier);
-  if (rank >= 2) {
-    const planet = state.planets[state.continents[city.continentId]?.planetId ?? ""];
-    if (planet) return planet.policy;
+
+  // galaxy tier: the whole empire follows one policy.
+  if (rank >= 4 && state.empirePolicy) return state.empirePolicy;
+  // system tier: each city follows its containing system's policy.
+  if (rank >= 3) {
+    const system = planet ? state.systems[planet.systemId] : undefined;
+    if (system?.policy) return system.policy;
   }
-  if (rank >= 1) return state.continents[city.continentId]?.policy ?? city.focus;
+  // planet tier: city follows its planet's policy.
+  if (rank >= 2 && planet) return planet.policy;
+  // continent tier: city follows its continent's policy.
+  if (rank >= 1) return continent?.policy ?? city.focus;
   return city.focus;
 }
 
