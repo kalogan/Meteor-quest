@@ -141,6 +141,7 @@ export function SystemView({
                 game={game}
                 isCradle={isCradle}
                 position={[0, 0, 0]}
+                reducedMotion={reducedMotion}
               />
               {/* Per-planet built defense — a shield ring around settled worlds. */}
               <DefenseShield defense={planet.defense} radius={r} />

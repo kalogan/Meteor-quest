@@ -5,6 +5,7 @@ import type { Continent, GameState, Planet } from "@meteor/shared";
 import { useSelection } from "../sim/selection";
 import { PALETTE, planetColor, settleGlow } from "./palette";
 import { planetRadius } from "./layout";
+import { GroundTechProps, OrbitTechProps } from "./TechPropsLayer";
 
 /**
  * One low-poly planet: a flat-shaded icosahedron, its continents/cities scattered
@@ -81,11 +82,14 @@ export function PlanetView({
   game,
   isCradle,
   position,
+  reducedMotion = false,
 }: {
   planet: Planet;
   game: GameState;
   isCradle: boolean;
   position: [number, number, number];
+  /** Freeze cosmetic prop animations (accessibility). Defaults to animated. */
+  reducedMotion?: boolean;
 }) {
   const spin = useRef<Group>(null);
   const select = useSelection((s) => s.select);
@@ -144,7 +148,29 @@ export function PlanetView({
               onPick={select}
             />
           ))}
+
+        {/* [tech props] Ground structures for the empire's unlocked tech — INSIDE the spin
+            group so they co-rotate with the surface and read as planted. Settled worlds only. */}
+        {planet.settled && (
+          <GroundTechProps
+            planet={planet}
+            radius={radius}
+            unlocked={game.research.unlocked}
+            reducedMotion={reducedMotion}
+          />
+        )}
       </group>
+
+      {/* [tech props] Orbital structures ring the world — OUTSIDE the spin group so the ring
+          keeps its own slow revolution, independent of the surface spin. Settled worlds only. */}
+      {planet.settled && (
+        <OrbitTechProps
+          planet={planet}
+          radius={radius}
+          unlocked={game.research.unlocked}
+          reducedMotion={reducedMotion}
+        />
+      )}
 
       {/* Settled worlds wear a subtle glowing ring. */}
       {planet.settled && (

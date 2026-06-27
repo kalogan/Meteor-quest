@@ -62,3 +62,13 @@ export function settleGlow(planet: Planet): string {
   if (!planet.scanned) return PALETTE.glow;
   return pack.biomes.find((b) => b.id === planet.biome)?.color ?? PALETTE.glow;
 }
+
+/**
+ * [tech props] The accent colour a planet's tech structures pick up — its biome tint —
+ * so each settled world's props share its colour identity. Unlike planetColor this does
+ * NOT gate on fog: props only render on settled (hence known) worlds, so the biome is a
+ * fact here, not a reveal; fall back to the generic glow if the biome is somehow unknown.
+ */
+export function biomePropTint(planet: Planet): string {
+  return pack.biomes.find((b) => b.id === planet.biome)?.color ?? PALETTE.glow;
+}

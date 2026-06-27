@@ -5,10 +5,11 @@ import type { GameState } from "@meteor/shared";
 // REUSE the REAL product components — never reimplementations.
 import { WorldView } from "../world/WorldView";
 import { PlanetView } from "../world/PlanetView";
+import { PROP_COMPONENTS } from "../world/props/registry";
 import { IntroCinematic } from "../ui/intro/IntroCinematic";
 import { useSim } from "../sim/store";
 import { useSelection } from "../sim/selection";
-import { biomeGallery, flightTestState, listTech, previewState } from "./dataSource";
+import { biomeGallery, flightTestState, listBiomes, listTech, listTechProps, previewState } from "./dataSource";
 
 /**
  * The preview harness — a backend-free, dual-consumer tool over the REAL product:
@@ -22,12 +23,13 @@ import { biomeGallery, flightTestState, listTech, previewState } from "./dataSou
  * Production-truthful: it mounts the SAME WorldView/PlanetView the game ships and
  * the SAME content pack via the seam (dataSource) — never a fork "for preview".
  */
-type Mode = "world" | "biomes" | "tech" | "flight" | "intro";
+type Mode = "world" | "biomes" | "tech" | "props" | "flight" | "intro";
 
 const MODES: { id: Mode; label: string }[] = [
   { id: "world", label: "World" },
   { id: "biomes", label: "Biomes" },
   { id: "tech", label: "Tech" },
+  { id: "props", label: "Tech props" },
   { id: "flight", label: "Flight" },
   { id: "intro", label: "Intro" },
 ];
@@ -114,6 +116,7 @@ export function PreviewApp() {
         {mode === "world" && <WorldMode frozen={frozen} />}
         {mode === "biomes" && <BiomeGalleryMode seed={seed} frozen={frozen} onInspect={select} />}
         {mode === "tech" && <TechMode tech={tech} />}
+        {mode === "props" && <TechPropsGalleryMode frozen={frozen} />}
         {mode === "flight" && <FlightMode seed={seed} frozen={frozen} />}
         {mode === "intro" && <IntroMode seed={seed} />}
       </main>
@@ -200,6 +203,58 @@ function TechMode({ tech }: { tech: ReturnType<typeof listTech> }) {
           {t.requiredResource && <span style={{ color: "#ffb454" }}> · needs {t.requiredResource}</span>}
         </div>
       ))}
+    </div>
+  );
+}
+
+/**
+ * Tech-props gallery: one tile per authored tech structure, each mounting the REAL prop
+ * component (via the same registry the world uses) in isolation so the Director can eyeball
+ * and tune each silhouette. Tiles cycle through the biome tints so the per-world accent
+ * variety is visible at a glance. Enumerated from content — a newly-tagged tech appears
+ * automatically, no per-prop wiring.
+ */
+function TechPropsGalleryMode({ frozen }: { frozen: boolean }) {
+  const specimens = useMemo(() => listTechProps(), []);
+  const tints = useMemo(() => listBiomes().map((b) => b.color), []);
+  return (
+    <div
+      data-testid="props-gallery"
+      style={{ position: "absolute", inset: 0, overflow: "auto", padding: 16, display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 16, alignContent: "start" }}
+    >
+      {specimens.map(({ tech, prop }, i) => {
+        const Comp = PROP_COMPONENTS[prop.kind];
+        const tint = tints[i % Math.max(1, tints.length)] ?? "#8fe3ff";
+        const groundY = prop.placement === "ground" ? -0.55 : 0;
+        return (
+          <figure
+            key={prop.kind}
+            data-testid={`prop-cell-${prop.kind}`}
+            style={{ margin: 0, border: BORDER, borderRadius: 10, overflow: "hidden", background: "#070b13" }}
+          >
+            <div style={{ height: 200 }}>
+              <Canvas frameloop={frozen ? "demand" : "always"} camera={{ position: [2.4, 1.6, 2.8], fov: 42 }}>
+                <ambientLight intensity={0.5} />
+                <hemisphereLight color="#9fb4ff" groundColor="#0a0c14" intensity={0.4} />
+                <pointLight position={[4, 5, 6]} intensity={45} distance={40} decay={1.6} color="#ffe9b0" />
+                <group position={[0, groundY, 0]}>
+                  <Comp tint={tint} reducedMotion={false} />
+                </group>
+              </Canvas>
+            </div>
+            <figcaption style={{ padding: 12, borderTop: BORDER }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <span style={{ width: 14, height: 14, borderRadius: 3, background: tint }} />
+                <strong>{tech.name}</strong>
+              </div>
+              <div style={{ opacity: 0.7, fontSize: 13 }}>
+                {prop.kind} · {prop.placement}
+                {prop.scale ? ` · ×${prop.scale}` : ""} · {tech.category}
+              </div>
+            </figcaption>
+          </figure>
+        );
+      })}
     </div>
   );
 }
@@ -369,7 +424,9 @@ function useFlightTicker(frozen: boolean) {
 
 function tabStyle(active: boolean): React.CSSProperties {
   return {
-    background: active ? "#2b6cff" : "#1a2236",
+    // #2b6cff was 4.47:1 with white (just under AA 4.5); #2f66ea keeps the active accent
+    // while clearing 4.5:1 — fixes contrast for every active tab/control in the toolbar.
+    background: active ? "#2f66ea" : "#1a2236",
     color: "#fff",
     border: "none",
     borderRadius: 4,

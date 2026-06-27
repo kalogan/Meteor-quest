@@ -1,4 +1,4 @@
-import { getContentPack, type Biome, type Planet, type TechNode } from "@meteor/shared";
+import { getContentPack, type Biome, type Planet, type TechNode, type TechProp } from "@meteor/shared";
 import { createInitialState } from "@meteor/sim-core";
 import type { GameState } from "@meteor/shared";
 
@@ -14,6 +14,23 @@ export function listBiomes(): Biome[] {
 
 export function listTech(): TechNode[] {
   return getContentPack().tech;
+}
+
+/** A tech paired with the structure it plants — for the "Tech props" gallery. */
+export interface TechPropSpecimen {
+  tech: TechNode;
+  prop: TechProp;
+}
+
+/**
+ * Every authored tech-prop, enumerated from CONTENT (not a hand-list), so a newly-tagged
+ * tech appears in the gallery automatically. The gallery mounts the REAL prop component
+ * for each `prop.kind` via the same registry the world uses — never a preview fork.
+ */
+export function listTechProps(): TechPropSpecimen[] {
+  return getContentPack()
+    .tech.filter((t): t is TechNode & { prop: TechProp } => Boolean(t.prop))
+    .map((t) => ({ tech: t, prop: t.prop }));
 }
 
 /** Identity seed reproduces the exact on-disk world; vary the seed to explore. */
