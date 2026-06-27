@@ -2,6 +2,21 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Game shell + audio (tasks #19–21) — done, verified
+- Front door for the loop: Title/splash (live galaxy backdrop = real WorldView) with
+  New Game / Continue (hasSave) / Settings; Esc pause menu (Resume/Settings/Restart/
+  Quit); Settings (reduced-motion, default speed, autosave, master/music/sfx volume,
+  mute, reset save/settings). App routes on `useAppPhase`; loop ticks only while
+  `playing` (title/pause freeze the sim). Procedural Web Audio engine (ambient drone +
+  state-driven SFX: launch/arrival/threat/settle/ui), volumes from `useSettings`,
+  AudioContext unlocked on first gesture; mounted from main.tsx.
+- Seams: src/sim/settings.ts (persisted) + appPhase.ts; useGameLoop gated on phase.
+- Architect smoke (axe + Playwright): title→New Game starts sim (tick 3→7), Esc pause
+  FREEZES sim, settings dialog (3 sliders + 2 switches). **axe 0 violations** on
+  title/pause/settings; console CLEAN (audio inits on gesture, no throws). Gate GREEN.
+- No git race this round — strict per-file adds held (shell 4 commits in App+ui/shell,
+  audio 1 commit in src/audio). Mitigation from the prior race worked.
+
 ## Journey — flying to a new planet (tasks #15–18) — done, verified
 - Visible real-time expeditions: launch toward a reachable system → ship flies across
   galaxy space (autopilot homes; Arrow/A-D lightly steer, costing fuel) → arrival
