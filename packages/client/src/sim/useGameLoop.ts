@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { TICK_SECONDS } from "@meteor/sim-core";
 import { useSim } from "./store.js";
+import { makeThrottledSaver } from "./persist.js";
 
 /**
  * The real-time loop. Accumulates wall-clock dt scaled by the game's timeScale and
@@ -12,6 +13,11 @@ export function useGameLoop(): void {
   const last = useRef<number | null>(null);
 
   useEffect(() => {
+    // Autosave the running game (throttled). Only the live game enables this, so the
+    // preview harness exploring seeds never overwrites a real save.
+    const save = makeThrottledSaver();
+    const unsubscribe = useSim.subscribe((s) => save(s.game));
+
     let raf = 0;
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
@@ -31,6 +37,9 @@ export function useGameLoop(): void {
       if (steps > 0) advance(steps);
     };
     raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      unsubscribe();
+    };
   }, []);
 }
