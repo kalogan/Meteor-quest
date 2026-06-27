@@ -2,6 +2,21 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Avatar iteration — tuner + mobile controls + richer worlds (task #48) — done, verified
+- `sim/avatarConfig.ts` (useAvatarConfig): live physics/gravity knobs (gravityScale, baseG,
+  moveAccel, maxSpeed, friction, airControl, jumpSpeed) read each frame by the controller; the
+  avatar panel gains sliders + Reset, gravity readout shows EFFECTIVE g (per-planet × scale).
+- `preview/avatarInput.ts`: shared input seam (keyX/Z, touchX/Z+active, jumpQueued). Keyboard
+  AND the on-screen controls both write it; controller reads it (joystick wins when engaged,
+  edge-triggered jump → no double-jump).
+- `preview/AvatarTouchControls.tsx` (builder): virtual joystick (move) + JUMP button → seam.
+- Feel: tuned defaults (accel 30, maxSpeed 4.6, jump 6.4, airControl 0.4); grip-damped
+  friction so low-grip worlds slide. Richer worlds: scattered low-poly boulders.
+- Verified: gate GREEN; avatar smoke — joystick moves avatar (Δ1.45u), JUMP button jumps,
+  gravity ×0.4 lowers effective g (1.72→0.69) and ~doubles jump apex (0.83→1.70), console
+  CLEAN; screenshot (joystick + jump button + rocks + tuner). Built with a parallel builder
+  for the touch controls (disjoint file via the input seam — no conflicts).
+
 ## Surface knobs as live configs + Tier 2 walkable avatar (tasks #46–47) — done, verified
 - CONFIG EXPOSURE: every surface dive/roam tuning constant → `sim/surfaceConfig.ts`
   (useSurfaceConfig store, defaults == the inlined values, behaviour unchanged). SurfaceView
