@@ -3,13 +3,15 @@ import { useAppPhase } from "../../sim/appPhase";
 import { useSettings } from "../../sim/settings";
 import { TitleScreen } from "./TitleScreen";
 import { GameRoot } from "./GameRoot";
+import { VictoryOverlay } from "./VictoryOverlay";
 import { applyReducedMotion } from "./SettingsPanel";
 import "./shell.css";
 
 /**
  * Top-level game-shell router. Routes on `useAppPhase().phase`:
  *   - "title"            → the TitleScreen (live galaxy backdrop + main menu).
- *   - "playing"/"paused" → the GameRoot (loop + canvas + HUD, pause overlay).
+ *   - "playing"/"paused" → the GameRoot (loop + canvas + HUD, pause overlay), with the
+ *     VictoryOverlay layered above it (it self-gates on `game.objectives.won`).
  *
  * GameRoot is keyed by neither phase value, so the loop/canvas mount once and persist
  * across the play↔pause toggle (no canvas remount when pausing). Mounting/unmounting
@@ -28,5 +30,11 @@ export function Shell() {
   }, [reducedMotion]);
 
   if (phase === "title") return <TitleScreen />;
-  return <GameRoot />;
+  return (
+    <>
+      <GameRoot />
+      {/* Celebratory end-state, above the game/HUD while playing (reads game.objectives.won). */}
+      <VictoryOverlay />
+    </>
+  );
 }
