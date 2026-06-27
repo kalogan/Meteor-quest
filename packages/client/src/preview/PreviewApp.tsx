@@ -8,12 +8,17 @@ import { PlanetView } from "../world/PlanetView";
 import { PROP_COMPONENTS } from "../world/props/registry";
 import { PropTooltip } from "../ui/PropTooltip";
 import { SurfaceControl } from "../ui/SurfaceControl";
+import { JournalPanel } from "../ui/JournalPanel";
 import { SurfaceTuner } from "./SurfaceTuner";
 import { AvatarMode } from "./AvatarMode";
 import { IntroCinematic } from "../ui/intro/IntroCinematic";
 import { useSim } from "../sim/store";
 import { useSelection } from "../sim/selection";
 import { biomeGallery, flightTestState, listBiomes, listTech, listTechProps, previewState } from "./dataSource";
+// The Journal mode mounts the REAL HUD JournalPanel, which is styled by the shared HUD sheet
+// (dock placement + collapsible chrome). In-game Hud.tsx imports it; the harness loads it here
+// so the preview matches what ships. Only elements carrying hud-* classes are affected.
+import "../ui/hud.css";
 
 /**
  * The preview harness — a backend-free, dual-consumer tool over the REAL product:
@@ -27,7 +32,7 @@ import { biomeGallery, flightTestState, listBiomes, listTech, listTechProps, pre
  * Production-truthful: it mounts the SAME WorldView/PlanetView the game ships and
  * the SAME content pack via the seam (dataSource) — never a fork "for preview".
  */
-type Mode = "world" | "biomes" | "tech" | "props" | "surface" | "avatar" | "flight" | "intro";
+type Mode = "world" | "biomes" | "tech" | "props" | "surface" | "avatar" | "journal" | "flight" | "intro";
 
 const MODES: { id: Mode; label: string }[] = [
   { id: "world", label: "World" },
@@ -36,6 +41,7 @@ const MODES: { id: Mode; label: string }[] = [
   { id: "props", label: "Tech props" },
   { id: "surface", label: "Surface" },
   { id: "avatar", label: "Avatar" },
+  { id: "journal", label: "Journal" },
   { id: "flight", label: "Flight" },
   { id: "intro", label: "Intro" },
 ];
@@ -57,7 +63,7 @@ export function PreviewApp() {
   // seed 0 == the on-disk identity world and every seed is reproducible. Flight and
   // Intro modes install their OWN world, so don't stomp it with a plain reset.
   useEffect(() => {
-    if (mode !== "flight" && mode !== "intro" && mode !== "surface" && mode !== "avatar") reset(seed);
+    if (mode !== "flight" && mode !== "intro" && mode !== "surface" && mode !== "avatar" && mode !== "journal") reset(seed);
   }, [seed, reset, mode]);
 
   const tech = useMemo(() => listTech(), []);
@@ -125,6 +131,7 @@ export function PreviewApp() {
         {mode === "props" && <TechPropsGalleryMode frozen={frozen} />}
         {mode === "surface" && <SurfaceMode seed={seed} frozen={frozen} />}
         {mode === "avatar" && <AvatarMode onReturnToOrbit={() => setMode("surface")} />}
+        {mode === "journal" && <JournalMode seed={seed} frozen={frozen} />}
         {mode === "flight" && <FlightMode seed={seed} frozen={frozen} />}
         {mode === "intro" && <IntroMode seed={seed} />}
       </main>
@@ -329,6 +336,54 @@ function SurfaceMode({ seed, frozen }: { seed: number; frozen: boolean }) {
       </Canvas>
       <SurfaceControl />
       <SurfaceTuner />
+    </div>
+  );
+}
+
+/**
+ * Journal mode — the REAL in-game JournalPanel over a charted-rich world, so the Director can
+ * eyeball the travel logbook (portraits + stats) and tune it. Installs a world with several
+ * systems discovered and a spread of planets scanned/settled (preview scaffolding — the
+ * shipped game charts worlds through play), then mounts the SAME WorldView so tapping a
+ * journal page frames that world exactly as it does in-game (production-truthful — no fork).
+ */
+function JournalMode({ seed, frozen }: { seed: number; frozen: boolean }) {
+  const setGame = useSim((s) => s.setGame);
+
+  useEffect(() => {
+    const g = previewState(seed);
+    g.research.unlocked = [
+      "basic_industry", "refining", "power_grid", "fusion", "federal_admin", "planetary_gov",
+      "rocketry", "biolabs", "basic_sensors", "deep_sensors",
+    ];
+    // Chart a spread of worlds (nearest-out) so the journal has pages: discover their systems,
+    // scan every planet, and colonize the first few non-cradle worlds.
+    const systems = Object.values(g.systems).sort((a, b) => a.distanceFromHome - b.distanceFromHome);
+    let charted = 0;
+    for (const sys of systems) {
+      sys.discovered = true;
+      for (const pid of sys.planetIds) {
+        const p = g.planets[pid];
+        if (!p) continue;
+        p.scanned = true;
+        if (charted > 0 && charted < 4) p.settled = true; // a few colonies (not the cradle)
+        charted += 1;
+      }
+      if (charted >= 6) break;
+    }
+    setGame(g);
+  }, [seed, setGame]);
+
+  return (
+    <div style={{ position: "absolute", inset: 0 }} data-testid="journal-mode">
+      <Canvas
+        data-testid="journal-canvas"
+        frameloop={frozen ? "demand" : "always"}
+        camera={{ position: [6, 5, 9], fov: 50, near: 0.1, far: 2000 }}
+      >
+        <WorldView />
+      </Canvas>
+      <JournalPanel />
     </div>
   );
 }

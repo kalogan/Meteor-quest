@@ -2,6 +2,49 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Travel Journal — logbook of visited worlds (task #50) — done, verified
+- A HUD JournalPanel (`ui/JournalPanel.tsx`) documents every world you've been to: the cradle
+  plus every planet SCANNED or SETTLED. Each page = a rendered PORTRAIT of the world (the REAL
+  PlanetView in a small lazy-mounted Canvas — `ui/JournalThumbnail.tsx`) + stats: system,
+  distance-from-home (ly), orbit radius (AU = distance-from-star), MOONS, gravity (g + floaty/
+  light/normal/heavy), continents, biome, yields, and a status badge (Home / Colony / Charted).
+  A flyleaf summary tallies worlds-logged / colonies / tech / minerals. Tapping a page
+  `select()`s that planet → the God-view CameraRig frames it (journal doubles as a "jump to
+  where I've been" index); the focused world shows a "You are here" badge.
+- Derivation is a pure read-only projection: `sim/journal.ts` (`journalEntries`, `journalSummary`,
+  `moonCount`). NOT sim state. Stats absent from the model are derived DETERMINISTICALLY from
+  the planet id: moons (0–3 weighted) via mulberry32; gravity reuses `planetSurface.surfaceProps`.
+  "Minerals" is the empire stockpile (no per-planet mined history in the sim).
+- WebGL context budget: portraits lazy-mount behind an IntersectionObserver (same fix as the
+  tech-props gallery) so only on-screen pages hold a live context; off-screen pages are a
+  tinted placeholder. Reduced-motion aware (resolved like the renderers). Collapsible + joins
+  the phone drawer; docked `.hud-dock-journal` (left rail, right of Objectives).
+- Preview: new 'Journal' mode (`PreviewApp.JournalMode`) installs a charted-rich world (several
+  systems discovered, ~6 planets scanned, a few colonies) and mounts the REAL WorldView +
+  JournalPanel (no fork). Harness now imports `ui/hud.css` so the panel is styled in preview too.
+- Verified: gate GREEN (116 sim tests); journal smoke — 6 pages each with a portrait + full
+  stats, tapping a page selects+frames that planet (selectedKind=planet, "You are here"),
+  **axe 0 violations** on the panel, phone drawer header present, console CLEAN; screenshot
+  reviewed (portraits read clearly, badges + stat grid legible).
+- TASTE/FOLLOW-UPS: in-game left-rail placement (left:312, 70vh) can crowd TechPanel /
+  bottom-center Tactical on narrow desktops — a dock-position pass is a Director item. Moons +
+  surface gravity are cosmetic-derived (not in the sim) — promote to the model if they ever
+  gate play. No cumulative "minerals mined per planet" (sim tracks only stockpiles/rates).
+
+## Avatar polish — footstep dust + landing puff + SFX + return-to-orbit (task #49) — done, verified
+- Wired two feel pieces into the Tier-2 walkable preview: `preview/avatarSfx.ts` (procedural
+  Web Audio — jump blip, weighted land thud scaling with impact speed, footstep tap w/ pitch
+  jitter; lazy cached AudioContext, soft master gain, try/catch-guarded) and `world/AvatarFx.tsx`
+  (pooled 48-mesh cosmetic dust/puff emitter — `FxEmitter.burst(x,y,z,strength,kind)`).
+- AvatarScene controller triggers: jump → sfx.jump(); airborne→grounded landing → sfx.land +
+  burst("land") with strength from impact downward speed; footstep every ~1.4m walked on the
+  ground → sfx.step() + burst("step"). `<AvatarFx>` mounted in the scene with an emitterRef.
+- "Return to orbit" button (PreviewApp passes `onReturnToOrbit` → drops back to Surface mode).
+- Built the two leaf files with parallel builders (disjoint NEW files via the FxEmitter/sfx
+  contracts), Architect did the controller wiring. Verified: gate GREEN; avatar smoke — joystick
+  walks (Δ2.27u, footsteps fire), JUMP works + lands clean, return-to-orbit switches to Surface,
+  console CLEAN; screenshot reviewed.
+
 ## Avatar iteration — tuner + mobile controls + richer worlds (task #48) — done, verified
 - `sim/avatarConfig.ts` (useAvatarConfig): live physics/gravity knobs (gravityScale, baseG,
   moveAccel, maxSpeed, friction, airControl, jumpSpeed) read each frame by the controller; the

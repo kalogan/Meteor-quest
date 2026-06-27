@@ -134,6 +134,10 @@
 /* Objectives panel: bottom-left rail on desktop (clear of resources/tech up top and
    the bottom-right defense/tactical cluster). On phone it joins the drawer accordion. */
 .hud-dock-objectives { bottom: 12px; left: 12px; max-height: 60vh; }
+/* Travel journal: left rail, just right of objectives (its own inner scroll keeps the
+   variable-length world list from colliding with the bottom cluster). Joins the phone
+   drawer accordion on small viewports. */
+.hud-dock-journal { bottom: 12px; left: 312px; max-height: 70vh; }
 .hud-dock-bc {
   bottom: 12px;
   left: 50%;

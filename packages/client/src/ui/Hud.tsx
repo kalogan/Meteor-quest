@@ -1,4 +1,5 @@
 import { DefensePanel } from "./DefensePanel";
+import { JournalPanel } from "./JournalPanel";
 import { JourneyPanel } from "./JourneyPanel";
 import { ObjectivesPanel } from "./ObjectivesPanel";
 import { ResourceHud } from "./ResourceHud";
@@ -47,6 +48,7 @@ export function Hud() {
         <TechPanel />
         <TierControlPanel />
         <JourneyPanel />
+        <JournalPanel />
         <DefensePanel />
       </div>
 
