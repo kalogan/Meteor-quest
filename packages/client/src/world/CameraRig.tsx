@@ -64,6 +64,8 @@ export function CameraRig({ game }: { game: GameState }) {
   const _tmpTarget = useRef(new Vector3());
   const _surfBase = useRef(new Vector3());
   const _up = useRef(new Vector3());
+  const _lastTarget = useRef(new Vector3());
+  const _scratch = useRef(new Vector3());
   // Latched nearSurface (hysteresis) + the set of held roam keys.
   const nearRef = useRef(false);
   const keys = useRef<Set<string>>(new Set());
@@ -258,12 +260,15 @@ export function CameraRig({ game }: { game: GameState }) {
         const dist = _camPos.current.distanceTo(_tmpCenter.current);
         near = nearRef.current ? dist < r * 5 : dist < r * 1.4;
 
-        // ── Roam: WASD / arrows translate the camera across the ground ────────────
+        // ── Roam: translate the camera across the ground, keep it grounded ────────
         if (near) {
-          _up.current.set(fn.normal[0], fn.normal[1], fn.normal[2]).normalize();
-          _surfBase.current.copy(_tmpCenter.current).addScaledVector(_up.current, r); // surface point
+          const up = _up.current.set(fn.normal[0], fn.normal[1], fn.normal[2]).normalize();
+          _surfBase.current.copy(_tmpCenter.current).addScaledVector(up, r); // surface point
+          const justEntered = !nearRef.current;
+
+          // Keyboard roam (desktop): WASD / arrows move along the ground.
           const k = keys.current;
-          const speed = r * 1.4 * delta;
+          const speed = r * 1.7 * delta;
           let fwd = 0;
           let strafe = 0;
           if (k.has("w") || k.has("arrowup")) fwd += 1;
@@ -272,24 +277,46 @@ export function CameraRig({ game }: { game: GameState }) {
           if (k.has("a") || k.has("arrowleft")) strafe -= 1;
           if (fwd) cc.forward(fwd * speed, false);
           if (strafe) cc.truck(strafe * speed, 0, false);
-          if (fwd || strafe) {
-            // Re-level to a fixed eye height above the tangent ground, so forward motion
-            // (which follows the slightly-downward gaze) doesn't sink the camera underground.
-            cc.getPosition(_camPos.current);
-            cc.getTarget(_tmpTarget.current);
-            const baseDot = _surfBase.current.dot(_up.current);
-            const h = _camPos.current.dot(_up.current) - baseDot;
-            const dh = r * 0.22 - h;
-            if (Math.abs(dh) > 1e-3) {
-              _camPos.current.addScaledVector(_up.current, dh);
-              _tmpTarget.current.addScaledVector(_up.current, dh);
-              cc.setLookAt(
-                _camPos.current.x, _camPos.current.y, _camPos.current.z,
-                _tmpTarget.current.x, _tmpTarget.current.y, _tmpTarget.current.z,
-                false,
-              );
-            }
+
+          cc.getPosition(_camPos.current);
+          cc.getTarget(_tmpTarget.current);
+          const baseDot = _surfBase.current.dot(up);
+          let h = _camPos.current.dot(up) - baseDot; // camera height above the tangent ground
+
+          // Did the look-target translate HORIZONTALLY? (WASD forward/truck OR a touch
+          // two-finger pan both move the target across the ground; pure look/orbit keeps it
+          // fixed.) Project out the up component so re-leveling itself isn't seen as motion.
+          _scratch.current.copy(_tmpTarget.current).sub(_lastTarget.current);
+          _scratch.current.addScaledVector(up, -_scratch.current.dot(up));
+          const translated = !justEntered && _scratch.current.lengthSq() > (r * 0.004) ** 2;
+
+          let changed = false;
+          const eyeH = r * 0.22;
+          if (translated) {
+            // Re-level camera + target together → camera back to eye height, gaze pitch kept.
+            const dh = eyeH - h;
+            _camPos.current.addScaledVector(up, dh);
+            _tmpTarget.current.addScaledVector(up, dh);
+            h = eyeH;
+            changed = true;
           }
+          // Soft pitch clamp via height bounds (camera only): can't orbit to bird's-eye or
+          // dip the view below the ground.
+          const hMin = r * 0.08;
+          const hMax = r * 0.62;
+          const clampedH = h < hMin ? hMin : h > hMax ? hMax : h;
+          if (clampedH !== h) {
+            _camPos.current.addScaledVector(up, clampedH - h);
+            changed = true;
+          }
+          if (changed) {
+            cc.setLookAt(
+              _camPos.current.x, _camPos.current.y, _camPos.current.z,
+              _tmpTarget.current.x, _tmpTarget.current.y, _tmpTarget.current.z,
+              false,
+            );
+          }
+          _lastTarget.current.copy(_tmpTarget.current);
         }
       } else {
         near = false;

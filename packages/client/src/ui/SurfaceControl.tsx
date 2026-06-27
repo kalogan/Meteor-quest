@@ -41,7 +41,7 @@ export function SurfaceControl() {
             backdropFilter: "blur(6px)",
           }}
         >
-          WASD / arrows to move · drag to look
+          Move: WASD / two-finger · Look: drag
         </div>
       )}
       <button
