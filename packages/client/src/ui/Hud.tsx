@@ -1,4 +1,5 @@
 import { DefensePanel } from "./DefensePanel";
+import { JourneyPanel } from "./JourneyPanel";
 import { ResourceHud } from "./ResourceHud";
 import { SpeedControls } from "./SpeedControls";
 import { TacticalPanel } from "./TacticalPanel";
@@ -13,11 +14,12 @@ import "./hud.css";
  * Responsive model (see hud.css):
  *   Desktop (> 720px): panels are corner-docked (the original feel) — ResourceHud
  *     top-left, TechPanel beside it, SpeedControls top-right, TierControlPanel below
- *     it, DefensePanel bottom-right, TacticalPanel bottom-center.
+ *     it, JourneyPanel below that, DefensePanel bottom-right, TacticalPanel
+ *     bottom-center.
  *   Phone (<= 720px): docking is dropped. A top STATUS STRIP holds resources + speed
  *     (always visible, non-overlapping), and a bottom DRAWER stacks the heavy panels
- *     (research / command / defense) as an accordion — each collapses so the canvas
- *     stays visible. Threat alerts sit just above the drawer.
+ *     (research / command / expedition / defense) as an accordion — each collapses so
+ *     the canvas stays visible. Threat alerts sit just above the drawer.
  *
  * The container is a `complementary` landmark with `pointer-events:none` so the
  * God-view receives clicks; each panel re-enables pointer-events on itself. Heavy
@@ -39,6 +41,7 @@ export function Hud() {
       <div className="hud-drawer">
         <TechPanel />
         <TierControlPanel />
+        <JourneyPanel />
         <DefensePanel />
       </div>
 

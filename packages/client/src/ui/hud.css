@@ -111,6 +111,10 @@
 .hud-dock-tech { top: 12px; left: 220px; }
 .hud-dock-tr { top: 12px; right: 12px; }
 .hud-dock-tier { top: 64px; right: 12px; }
+/* Expedition panel docks below the command panel on the right rail (desktop). It is
+   tall/variable; bottom:auto + an inner scroll keep it from colliding with the
+   bottom-docked panels. */
+.hud-dock-journey { top: 360px; right: 12px; }
 .hud-dock-br { bottom: 12px; right: 12px; }
 .hud-dock-bc {
   bottom: 12px;

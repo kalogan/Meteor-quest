@@ -106,3 +106,19 @@ export function formatCost(cost: Partial<Record<ResourceId, number>>): string {
     .map(([r, amount]) => `${amount} ${r}`)
     .join(" · ");
 }
+
+/**
+ * [journey] Fuel the sim actually loads into an expedition's tank for the hop to a
+ * target system. Mirrors sim-core's `journeyFuelLoad` (which is not re-exported from
+ * the package index): the tank carries `fuelCost(distance) * FUEL_MARGIN` so a steered
+ * detour still has headroom. We mirror it here — exactly as `defenseInfo()` mirrors the
+ * defense economy — so the gating + the cost we show the player match what `launch`
+ * spends (the sim stays authoritative). `fuelCost` IS exported, so we only restate the
+ * margin constant. Keep in sync with `JOURNEY.FUEL_MARGIN` in sim-core/journeys.ts.
+ */
+export const JOURNEY_FUEL_MARGIN = 1.5;
+
+/** Fuel loaded into the tank for the hop to a target (mirrors sim-core launch). */
+export function journeyFuelLoad(baseFuelCost: number): number {
+  return baseFuelCost * JOURNEY_FUEL_MARGIN;
+}
