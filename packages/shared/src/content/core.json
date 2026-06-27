@@ -26,6 +26,7 @@
     { "id": "federal_admin", "name": "Federal Administration", "category": "administration", "cost": 60, "prereqs": ["basic_industry"], "effects": [{ "kind": "unlockTier", "tier": "continent" }] },
     { "id": "planetary_gov", "name": "Planetary Government", "category": "administration", "cost": 110, "prereqs": ["federal_admin", "refining"], "effects": [{ "kind": "unlockTier", "tier": "planet" }] },
     { "id": "system_command", "name": "System Command", "category": "administration", "cost": 220, "prereqs": ["planetary_gov", "orbital_launch"], "effects": [{ "kind": "unlockTier", "tier": "system" }] },
+    { "id": "galactic_senate", "name": "Galactic Senate", "category": "administration", "cost": 360, "prereqs": ["system_command", "warp_basics"], "effects": [{ "kind": "unlockTier", "tier": "galaxy" }, { "kind": "productionMultiplier", "category": "administration", "factor": 1.5 }] },
 
     { "id": "rocketry", "name": "Rocketry", "category": "propulsion", "cost": 75, "prereqs": ["power_grid", "refining"], "effects": [{ "kind": "shipRange", "delta": 40 }] },
     { "id": "orbital_launch", "name": "Orbital Launch", "category": "propulsion", "cost": 140, "prereqs": ["rocketry", "planetary_gov"], "effects": [{ "kind": "orbitalLaunch" }, { "kind": "shipRange", "delta": 30 }] },
@@ -34,8 +35,11 @@
     { "id": "basic_sensors", "name": "Basic Sensors", "category": "sensors", "cost": 45, "prereqs": ["power_grid"], "effects": [{ "kind": "sensorRange", "delta": 30 }] },
     { "id": "deep_sensors", "name": "Deep-Space Sensors", "category": "sensors", "cost": 130, "prereqs": ["basic_sensors", "rocketry"], "effects": [{ "kind": "sensorRange", "delta": 70 }] },
     { "id": "long_range_array", "name": "Long-Range Array", "category": "sensors", "cost": 210, "prereqs": ["deep_sensors"], "requiredResource": "silicate", "effects": [{ "kind": "sensorRange", "delta": 110 }] },
+    { "id": "galactic_survey", "name": "Galactic Survey Net", "category": "sensors", "cost": 320, "prereqs": ["long_range_array", "warp_basics"], "effects": [{ "kind": "sensorRange", "delta": 160 }] },
 
     { "id": "fusion", "name": "Fusion Power", "category": "energy", "cost": 200, "prereqs": ["power_grid", "refining"], "requiredResource": "cryocrystal", "effects": [{ "kind": "productionMultiplier", "category": "energy", "factor": 2 }] },
     { "id": "biolabs", "name": "Bio-Synthesis Labs", "category": "biotech", "cost": 180, "prereqs": ["planetary_gov"], "requiredResource": "biogel", "effects": [{ "kind": "productionMultiplier", "category": "biotech", "factor": 2 }, { "kind": "productionMultiplier", "category": "administration", "factor": 1.25 }] }
-  ]
+  ],
+  "galaxy": { "systemCount": 7, "radius": 260, "minSeparation": 40 },
+  "defense": { "buildCost": { "alloy": 10, "energy": 10 }, "defensePerBuild": 5 }
 }
