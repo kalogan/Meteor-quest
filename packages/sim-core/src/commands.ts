@@ -4,6 +4,7 @@ import { canTravel, fuelCost } from "./systems/travel.js";
 import { systemInSensorRange } from "./systems/fog.js";
 import { setEventResponse } from "./systems/threats.js";
 import { applyBuildDefense } from "./systems/defense.js";
+import { launch, steer, abort } from "./systems/journeys.js";
 
 /**
  * Authoritative command reducer. Pure: clones state, applies one command, returns
@@ -106,6 +107,18 @@ export function applyCommand(prev: GameState, cmd: Command): GameState {
     }
     case "setEmpirePolicy":
       state.empirePolicy = cmd.resource;
+      break;
+    // ── [journey] launch + light steering of an expedition ────────────────────
+    case "launchJourney":
+      launch(state, cmd.targetSystemId);
+      break;
+    case "steerJourney": {
+      const journey = state.journeys[cmd.journeyId];
+      if (journey) steer(journey, cmd.turn);
+      break;
+    }
+    case "abortJourney":
+      abort(state, cmd.journeyId);
       break;
   }
   return state;

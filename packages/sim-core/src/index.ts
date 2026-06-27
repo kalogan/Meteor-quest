@@ -17,6 +17,21 @@ export {
 export { runFog, systemInSensorRange } from "./systems/fog.js";
 export { canTravel, travelBlocker, fuelCost, FUEL_PER_DISTANCE, type TravelBlock } from "./systems/travel.js";
 export {
+  runJourneys,
+  launch,
+  steer,
+  abort,
+  launchBlocker,
+  isReachableTarget,
+  journeyFuelLoad,
+  JOURNEY_SPEED,
+  ARRIVE_RADIUS,
+  AUTOPILOT_RATE,
+  MAX_STEER_RATE,
+  FUEL_MARGIN,
+  type LaunchBlock,
+} from "./systems/journeys.js";
+export {
   runThreats,
   maybeSpawnEvent,
   resolveDueEvents,
