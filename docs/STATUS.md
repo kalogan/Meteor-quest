@@ -2,6 +2,20 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Objectives — goals + onboarding (tasks #22–24) — done, verified
+- One authored 10-step chain doubles as onboarding (teach) → goals → victory
+  (galaxy tier + 4 worlds). Sim evaluates conditions each tick + sets `won`; UI = an
+  Objectives HUD panel (current "Next:" + checklist), a once-only intro, and a victory
+  overlay in the shell. Save bumped v3.
+- Architect runtime-smoke caught a GREEN-BUT-BROKEN: VictoryOverlay used
+  `useSim(s => victoryStats(s.game))` — a selector returning a NEW object each render →
+  React #185 infinite loop → whole app crashed on entering play. The gate (build/lint)
+  passed; only the smoke caught it. Fixed (select stable game ref, compute stats in
+  render). LESSON: never derive a fresh object/array inside a zustand selector.
+- Re-verified: intro shows once; objectives panel renders; starting research completes
+  obj_research and advances "Next:"; victory overlay fires (stats + keep playing);
+  **axe 0 violations** on HUD + victory; console CLEAN. Gate GREEN (123 tests).
+
 ## Game shell + audio (tasks #19–21) — done, verified
 - Front door for the loop: Title/splash (live galaxy backdrop = real WorldView) with
   New Game / Continue (hasSave) / Settings; Esc pause menu (Resume/Settings/Restart/
