@@ -2,6 +2,16 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Home fleet in-game (task #27) — done, verified
+- After the intro, the God-view showed the cradle but NO ship (a ship only appeared
+  during a journey). Added a persistent cosmetic HOME FLEET — your ship orbiting the
+  cradle + the deployed mining probe harvesting — mounted in SystemView on the cradle
+  planet (sized to planet radius), reusing the extracted shared Ship + MiningProbe so
+  it matches the tutorial's final frame. Cosmetic, reduced-motion, no #185 selectors.
+- Architect smoke: New Game → Begin → in-game God-view shows the ship + probe orbiting
+  the cradle (verified visually — prominent at game scale); intro unchanged; console
+  CLEAN; gate GREEN. Taste knob: orbit radius/size (reads a touch large).
+
 ## Intro: orbit + mining-probe beat (task #26) — done, verified
 - Extended the cinematic: after the fly-in the ship settles into orbit, then deploys a
   low-poly mining probe (antenna/dish + pulsing mining beam + resource chunks rising
