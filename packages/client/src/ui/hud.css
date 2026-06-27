@@ -1,0 +1,211 @@
+/*
+ * HUD layout + accessibility styles.
+ *
+ * Inline styles in theme.ts can't express media/container queries or :focus-visible,
+ * so the responsive arrangement, focus rings, touch targets, and motion-reduction
+ * live here. Two layout modes share one markup tree:
+ *
+ *   Desktop (wide, > 720px): panels are corner-docked (the original feel) via the
+ *     .hud-dock-* classes, each absolutely positioned.
+ *   Phone (<= 720px): docking is dropped; a top status strip (resources + speed)
+ *     and a bottom accordion column (the heavy panels) keep the canvas visible and
+ *     stop panels from overlapping. Heavy panels collapse so only one is open.
+ *
+ * The overlay container keeps pointer-events:none so the God-view receives clicks;
+ * each panel re-enables pointer-events on itself.
+ */
+
+/* ---- Design tokens (mirror/extend theme.ts) ---- */
+:root {
+  --hud-panel-bg: rgba(10, 14, 22, 0.86);
+  --hud-panel-border: #243150; /* bumped from #1d2740 for >=3:1 against bg */
+  --hud-text: #e8edf6;
+  --hud-muted: #aab4c8; /* was opacity 0.6 (~#9197a3): now ~7:1 on panel bg */
+  --hud-focus: #8fb4ff;
+  --hud-accent: #2b6cff;
+}
+
+/* ---- Overlay container ---- */
+.hud-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Re-enable interaction on actual panels only. */
+.hud-panel {
+  pointer-events: auto;
+}
+
+/* ---- Accessible focus ring (applies to every interactive element) ---- */
+.hud-overlay :focus-visible,
+.hud-panel :focus-visible {
+  outline: 2px solid var(--hud-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---- Collapsible primitive ---- */
+.hud-collapsible {
+  display: flex;
+  flex-direction: column;
+}
+
+.hud-collapsible__header {
+  /* a real <button> reset to look like the panel heading */
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  margin: 0;
+  padding: 4px 0;
+  color: var(--hud-text);
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  font-size: 11px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.hud-collapsible__title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-collapsible__chevron {
+  flex: 0 0 auto;
+  transition: transform 0.18s ease;
+  font-size: 12px;
+  color: var(--hud-muted);
+}
+
+.hud-collapsible__header[aria-expanded="true"] .hud-collapsible__chevron {
+  transform: rotate(90deg);
+}
+
+.hud-collapsible__region {
+  overflow: hidden;
+}
+
+.hud-collapsible__region[hidden] {
+  display: none;
+}
+
+.hud-collapsible__body {
+  padding-top: 6px;
+}
+
+/* ---- Desktop docking (default >720px) ---- */
+.hud-dock {
+  position: absolute;
+}
+.hud-dock-tl { top: 12px; left: 12px; }
+.hud-dock-tech { top: 12px; left: 220px; }
+.hud-dock-tr { top: 12px; right: 12px; }
+.hud-dock-tier { top: 64px; right: 12px; }
+.hud-dock-br { bottom: 12px; right: 12px; }
+.hud-dock-bc {
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* The top status strip is a flat flex on desktop (resources + speed inline-docked
+   keep their own corners), so the strip wrapper itself is layout-neutral. */
+.hud-strip { display: contents; }
+
+/* The mobile accordion drawer is hidden on desktop; its children dock instead. */
+.hud-drawer { display: contents; }
+
+/* ---- Phone layout (<= 720px) ---- */
+@media (max-width: 720px) {
+  /* Top status strip: resources + speed, side by side, non-overlapping. */
+  .hud-strip {
+    display: flex;
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    gap: 8px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .hud-strip > .hud-panel {
+    position: static;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  /* The speed control shrinks to its content rather than stretching. */
+  .hud-strip > .hud-panel--speed {
+    flex: 0 0 auto;
+  }
+
+  /* The heavy panels become a single bottom drawer (accordion column). */
+  .hud-drawer {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    max-height: 56vh;
+    overflow-y: auto;
+  }
+  .hud-drawer > .hud-panel {
+    position: static;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    margin: 0 !important;
+  }
+
+  /* Tactical alerts sit just above the drawer so both stay reachable. */
+  .hud-dock-bc {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: auto;
+    top: 96px;
+    transform: none;
+    max-height: 40vh;
+    overflow-y: auto;
+  }
+  .hud-dock-bc > .hud-panel {
+    min-width: 0 !important;
+    width: auto;
+  }
+
+  /* Cap inner scroll regions so a panel never eats the whole screen. */
+  .hud-scroll {
+    max-height: 36vh !important;
+  }
+}
+
+/* ---- Touch targets: >=44x44 on coarse pointers ---- */
+@media (pointer: coarse) {
+  .hud-panel button,
+  .hud-panel input,
+  .hud-collapsible__header {
+    min-height: 44px;
+  }
+  .hud-panel button {
+    min-width: 44px;
+  }
+}
+
+/* ---- Reduced motion ---- */
+@media (prefers-reduced-motion: reduce) {
+  .hud-collapsible__chevron,
+  .hud-progress-fill {
+    transition: none !important;
+  }
+}

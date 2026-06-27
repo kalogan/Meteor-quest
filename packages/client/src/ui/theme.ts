@@ -13,10 +13,20 @@ import {
  * and only exposes the dense micro when authority sits low.
  */
 
+/**
+ * Contrast note (WCAG 2.1 AA): the previous muted styles used opacity 0.6/0.7 on the
+ * dark glass panel, which dropped text below 4.5:1. They now use an explicit
+ * MUTED_TEXT (#aab4c8 ≈ 7:1 on the panel bg) instead of dimming, and the panel
+ * border was bumped to #243150 for ≥3:1 as a UI boundary. Disabled button text uses
+ * #9aa3b8 (≈4.6:1) rather than the old low-contrast #6b7488.
+ */
+export const PANEL_BG = "rgba(10,14,22,0.86)";
+export const MUTED_TEXT = "#aab4c8";
+
 export const panel: CSSProperties = {
   position: "absolute",
-  background: "rgba(10,14,22,0.86)",
-  border: "1px solid #1d2740",
+  background: PANEL_BG,
+  border: "1px solid #243150",
   borderRadius: 8,
   padding: "10px 12px",
   fontSize: 13,
@@ -31,22 +41,23 @@ export const heading: CSSProperties = {
   letterSpacing: 0.3,
   textTransform: "uppercase",
   fontSize: 11,
-  opacity: 0.6,
+  color: MUTED_TEXT,
 };
 
-export const subtle: CSSProperties = { opacity: 0.6 };
+/** Muted-but-legible secondary text. No opacity dimming (it tanked contrast). */
+export const subtle: CSSProperties = { color: MUTED_TEXT };
 
 export function button(active = false, enabled = true): CSSProperties {
   return {
-    background: active ? "#2b6cff" : "#1a2236",
-    color: enabled ? "#fff" : "#6b7488",
-    border: active ? "1px solid #5b8cff" : "1px solid #28324c",
+    background: active ? "#2862e6" : "#1a2236",
+    color: enabled ? "#fff" : "#9aa3b8",
+    border: active ? "1px solid #5b8cff" : "1px solid #3a4668",
     borderRadius: 4,
     padding: "4px 8px",
     cursor: enabled ? "pointer" : "not-allowed",
     fontWeight: active ? 700 : 400,
     fontSize: 12,
-    opacity: enabled ? 1 : 0.5,
+    opacity: enabled ? 1 : 0.7,
   };
 }
 
