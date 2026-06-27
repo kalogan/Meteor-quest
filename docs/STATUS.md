@@ -2,6 +2,33 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Surface dive — land on a planet (tasks #40–43) — done, verified
+- Extends the continuous abstraction-zoom BELOW city tier: keep zooming in on a planet (or
+  press the Descend button) → the camera settles into a landed, horizon-facing pose and a
+  low-poly TERRAIN PATCH renders (biome-tinted relief doming into a curved horizon, a haze
+  band at the horizon, starfield as sky, and the colony's unlocked structures planted on the
+  ground ahead). Pull up / zoom out returns to orbit.
+- Seam: selection.nearSurface (camera-derived; zoomTier stays a TierId so HUD tier logic is
+  untouched — surface is a camera-only view, NOT an authority tier) + a one-shot frameRequest
+  for Descend/Pull-up. layout: SURFACE distances + focusSurfaceNormal.
+- CameraRig derives nearSurface from camera-to-planet-CENTRE distance (the landed pose looks
+  at the horizon, so eye→target is large — can't key off cc.distance); flies to a basis-
+  aligned landed pose (local +Z = the gaze) on request. SurfaceView builds deterministic
+  seeded terrain (flat-shaded grid, edge-dome horizon), horizon haze, a warm sun + sky fill,
+  and fans the unlocked ground props ahead of the camera. PlanetView hides the globe / orbit
+  rings / selection halo during a dive; SurfaceControl is the Descend/Pull-up button; preview
+  gains a 'Surface' mode (with a structure-rich cradle).
+- LESSONS (caught only by screenshots, gate was green throughout): (1) flipped triangle
+  winding → ground normals pointed DOWN → terrain lit from below (black); fixed winding.
+  (2) the underlying planet sphere showed through as a giant wall → hide the globe when
+  near-surface. (3) structures invisible because PreviewApp's reset effect re-installed a
+  fresh world for every non-flight/intro mode, clobbering Surface mode's unlocked tech →
+  excluded 'surface'. (4) degenerate camera up-vector for a plain planet selection (surf ==
+  centre) → derive the surface point from the focus normal.
+- Verified: gate GREEN; smoke — dive renders, Descend↔Pull-up toggles nearSurface, axe 0,
+  console CLEAN (preview + real game). Taste knobs: dome/relief amplitude, patch size, haze,
+  structure scale/placement, landed camera height/pitch.
+
 ## Playtest pass — balance fixes (tasks #37–39) — done, verified
 - Ran a headless optimal-auto-player over many seeds against the REAL sim. Found + fixed
   two critical issues:
