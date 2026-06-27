@@ -1,5 +1,5 @@
 import type { TierId } from "@meteor/shared";
-import type { ActiveEvent, GameState, Planet, StarSystem } from "@meteor/shared";
+import type { ActiveEvent, GameState, Journey, Planet, StarSystem } from "@meteor/shared";
 
 /**
  * Spatial layout + the continuous-zoom scale model. This file is the bridge from
@@ -26,6 +26,27 @@ export function planetRadius(planet: Planet, isCradle: boolean): number {
 /** World position of a system in galaxy space. */
 export function systemPosition(sys: StarSystem): [number, number, number] {
   return [sys.position.x * GALAXY_SCALE, sys.position.y * GALAXY_SCALE, sys.position.z * GALAXY_SCALE];
+}
+
+/**
+ * [journey] World position of an in-flight expedition in galaxy space — the same
+ * GALAXY_SCALE mapping systems use, so the ship sits in the shared galaxy frame and
+ * the camera can frame it next to its origin/target systems.
+ */
+export function journeyPosition(j: Journey): [number, number, number] {
+  return [j.pos.x * GALAXY_SCALE, j.pos.y * GALAXY_SCALE, j.pos.z * GALAXY_SCALE];
+}
+
+/**
+ * [journey] The expedition's unit heading in scene space. The sim keeps `heading`
+ * as a direction vector; we normalize defensively (a zero/garbage heading falls back
+ * to +Z) so the ship always has a stable orientation to point the nose down.
+ */
+export function journeyHeading(j: Journey): [number, number, number] {
+  const { x, y, z } = j.heading;
+  const len = Math.hypot(x, y, z);
+  if (!Number.isFinite(len) || len < 1e-6) return [0, 0, 1];
+  return [x / len, y / len, z / len];
 }
 
 /** World position of a planet relative to its star, from its deterministic orbit. */
