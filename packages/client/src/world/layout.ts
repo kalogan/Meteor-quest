@@ -76,6 +76,17 @@ export const ZOOM_BANDS: ZoomBand[] = [
   { tier: "city", distance: 1.7 },
 ];
 
+/**
+ * [surface dive] The closest view — BELOW city tier. The camera descends to a landed pose
+ * just off the surface and the SurfaceView renders a tangent terrain patch + horizon.
+ * `SURFACE_FRAME_DISTANCE` is where the Descend button settles the camera; `SURFACE_ENTER`
+ * is the live-distance threshold under which `nearSurface` flips on (so continuous zoom-in
+ * past city tier enters the surface too). Surface is NOT a TierId — it's a camera-only view
+ * below the authority ladder, so it stays out of the sim/HUD tier logic.
+ */
+export const SURFACE_FRAME_DISTANCE = 0.95;
+export const SURFACE_ENTER = 1.25;
+
 /** Classify a live camera distance into the closest zoom tier. */
 export function tierForDistance(distance: number): TierId {
   let bestTier: TierId = "planet";
@@ -186,6 +197,39 @@ export function resolveWorldPosition(
     sp[1] + po[1] + surfaceLocal[1],
     sp[2] + po[2] + surfaceLocal[2],
   ];
+}
+
+/**
+ * [surface dive] The unit LOCAL surface normal a dive focuses on (in the planet's own
+ * frame, before the system/orbit offset): the selected continent/city's golden-spiral
+ * point, the planet's first continent when only the planet is selected, or the north pole
+ * for a body with no continents. Returns the resolved planet too, so SurfaceView can size
+ * the patch to its radius. Null when the selection can't be located.
+ */
+export function focusSurfaceNormal(
+  game: GameState,
+  id: string,
+  kind: "planet" | "continent" | "city",
+): { planet: Planet; normal: [number, number, number] } | null {
+  let planet: Planet | undefined;
+  let contIndex = 0;
+  if (kind === "planet") {
+    planet = game.planets[id];
+  } else if (kind === "continent") {
+    const cont = game.continents[id];
+    planet = cont ? game.planets[cont.planetId] : undefined;
+    if (planet && cont) contIndex = planet.continentIds.indexOf(cont.id);
+  } else {
+    const city = game.cities[id];
+    const cont = city ? game.continents[city.continentId] : undefined;
+    planet = cont ? game.planets[cont.planetId] : undefined;
+    if (planet && cont) contIndex = planet.continentIds.indexOf(cont.id);
+  }
+  if (!planet) return null;
+  const total = Math.max(2, planet.continentIds.length);
+  const [nx, ny, nz] = spherePoint(Math.max(0, contIndex), total);
+  const len = Math.hypot(nx, ny, nz) || 1;
+  return { planet, normal: [nx / len, ny / len, nz / len] };
 }
 
 /**

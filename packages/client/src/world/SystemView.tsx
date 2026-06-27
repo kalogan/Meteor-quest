@@ -85,6 +85,9 @@ export function SystemView({
 }) {
   const select = useSelection((s) => s.select);
   const selectedId = useSelection((s) => s.selectedId);
+  // [surface dive] When landed on a surface, hide the star-orbit rings (they'd smear huge
+  // lines across the horizon from down there).
+  const nearSurface = useSelection((s) => s.nearSurface);
   const pos = systemPosition(system);
   const isHome = system.id === game.homeSystemId;
   // Resolved once per render; the home fleet holds still when motion is reduced.
@@ -134,7 +137,7 @@ export function SystemView({
         const r = planetRadius(planet, isCradle);
         return (
           <group key={planet.id}>
-            <OrbitRing radius={planet.orbit.radius} />
+            {!nearSurface && <OrbitRing radius={planet.orbit.radius} />}
             <group position={offset}>
               <PlanetView
                 planet={planet}

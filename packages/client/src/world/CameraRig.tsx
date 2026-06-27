@@ -8,9 +8,11 @@ import { useSelection } from "../sim/selection";
 import { activeJourney } from "./JourneyView";
 import {
   framingDistance,
+  focusSurfaceNormal,
   galaxyCenter,
   journeyHeading,
   journeyPosition,
+  planetRadius,
   resolveWorldPosition,
   systemPosition,
   tierForDistance,
@@ -37,6 +39,8 @@ export function CameraRig({ game }: { game: GameState }) {
   const selectedId = useSelection((s) => s.selectedId);
   const selectedKind = useSelection((s) => s.selectedKind);
   const setZoomTier = useSelection((s) => s.setZoomTier);
+  const setNearSurface = useSelection((s) => s.setNearSurface);
+  const frameRequest = useSelection((s) => s.frameRequest);
 
   // Track the last reported tier so we only push the store on a change.
   const lastTier = useRef<string | null>(null);
@@ -54,6 +58,9 @@ export function CameraRig({ game }: { game: GameState }) {
   const _ship = useRef(new Vector3());
   const _lead = useRef(new Vector3());
   const _eye = useRef(new Vector3());
+  // [surface dive] scratch for the per-frame camera-to-planet proximity test.
+  const _camPos = useRef(new Vector3());
+  const _tmpCenter = useRef(new Vector3());
 
   // Smoothly frame the current selection (or the whole galaxy when nothing is
   // selected). Shared by the selection effect and the follow-exit so the camera eases
@@ -89,6 +96,41 @@ export function CameraRig({ game }: { game: GameState }) {
       enableTransition,
     );
   };
+
+  // [surface dive] Fly to a landed surface pose ("surface") or back out to the focused
+  // planet ("planet"), driven by the Descend / Pull-up buttons via selection.frameRequest.
+  const frameToLevel = (cc: CameraControlsImpl, level: "surface" | "planet") => {
+    if (!selectedId || !selectedKind || selectedKind === "system") return;
+    const fn = focusSurfaceNormal(game, selectedId, selectedKind);
+    const center = fn ? resolveWorldPosition(game, fn.planet.id, "planet") : null;
+    if (!fn || !center) return;
+    const r = planetRadius(fn.planet, fn.planet.id === game.cradlePlanetId);
+    if (level === "planet") {
+      const d = framingDistance("planet");
+      cc.setLookAt(center[0] + d * 0.55, center[1] + d * 0.5, center[2] + d * 0.7, center[0], center[1], center[2], true);
+      return;
+    }
+    // A landed, horizon-facing pose. Derive the surface point from the focus NORMAL (so it
+    // works for a plain planet selection too, where resolveWorldPosition gives the centre)
+    // — the planet's local axes equal world axes here, so the local normal is the outward
+    // world normal. Stand a little above the ground and look forward along the tangent.
+    const up = new Vector3(fn.normal[0], fn.normal[1], fn.normal[2]).normalize();
+    const surf = new Vector3(center[0] + up.x * r, center[1] + up.y * r, center[2] + up.z * r);
+    let t = new Vector3().crossVectors(up, new Vector3(0, 1, 0));
+    if (t.lengthSq() < 1e-4) t = new Vector3().crossVectors(up, new Vector3(1, 0, 0));
+    t.normalize();
+    const eye = surf.clone().addScaledVector(up, r * 0.22).addScaledVector(t, -r * 0.15);
+    const look = surf.clone().addScaledVector(t, r * 1.3).addScaledVector(up, -r * 0.04);
+    cc.setLookAt(eye.x, eye.y, eye.z, look.x, look.y, look.z, true);
+  };
+
+  // React to a Descend / Pull-up request (one-shot, via the frameRequest token).
+  useEffect(() => {
+    const cc = controls.current;
+    if (!cc || !frameRequest || following.current) return;
+    frameToLevel(cc, frameRequest.level);
+    // Fire only when a new frame request arrives; `game`/selection read fresh inside.
+  }, [frameRequest]);
 
   // Fly to the selected entity whenever selection changes. While an expedition is in
   // flight the follow loop owns the camera, so we skip selection re-framing then (the
@@ -178,6 +220,21 @@ export function CameraRig({ game }: { game: GameState }) {
       lastTier.current = tier;
       setZoomTier(tier);
     }
+
+    // [surface dive] nearSurface = camera within ~1.6× the focused planet's radius of its
+    // CENTRE (not the look-target — the landed pose looks at the horizon, so eye→target is
+    // large). The store only updates on change, so this per-frame test costs no re-renders.
+    let near = false;
+    if (!journey && selectedId && selectedKind && selectedKind !== "system") {
+      const fn = focusSurfaceNormal(game, selectedId, selectedKind);
+      const center = fn ? resolveWorldPosition(game, fn.planet.id, "planet") : null;
+      if (fn && center) {
+        const r = planetRadius(fn.planet, fn.planet.id === game.cradlePlanetId);
+        cc.getPosition(_camPos.current);
+        near = _camPos.current.distanceTo(_tmpCenter.current.set(center[0], center[1], center[2])) < r * 1.6;
+      }
+    }
+    setNearSurface(near);
   });
 
   return (

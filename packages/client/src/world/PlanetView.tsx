@@ -4,8 +4,9 @@ import type { Group } from "three";
 import type { Continent, GameState, Planet } from "@meteor/shared";
 import { useSelection } from "../sim/selection";
 import { PALETTE, planetColor, settleGlow } from "./palette";
-import { planetRadius } from "./layout";
+import { focusSurfaceNormal, planetRadius } from "./layout";
 import { GroundTechProps, OrbitTechProps } from "./TechPropsLayer";
+import { SurfaceView } from "./SurfaceView";
 
 /**
  * One low-poly planet: a flat-shaded icosahedron, its continents/cities scattered
@@ -94,7 +95,18 @@ export function PlanetView({
   const spin = useRef<Group>(null);
   const select = useSelection((s) => s.select);
   const selectedId = useSelection((s) => s.selectedId);
+  const selectedKind = useSelection((s) => s.selectedKind);
+  const nearSurface = useSelection((s) => s.nearSurface);
   const isSelected = selectedId === planet.id;
+
+  // [surface dive] When the camera has descended to a planet's surface, the FOCUSED planet
+  // renders a landed terrain patch (SurfaceView). Resolve which planet + where, in render
+  // (primitive selectors only — no fresh object fed to a subscriber).
+  const surfaceFocus =
+    nearSurface && selectedId && selectedKind && selectedKind !== "system"
+      ? focusSurfaceNormal(game, selectedId, selectedKind)
+      : null;
+  const showSurface = !!surfaceFocus && surfaceFocus.planet.id === planet.id;
 
   const radius = planetRadius(planet, isCradle);
   const color = planetColor(planet);
@@ -117,7 +129,9 @@ export function PlanetView({
       name={`planet:${planet.id}`}
       userData={{ pickId: planet.id, pickKind: "planet" }}
     >
-      <group ref={spin}>
+      {/* The globe (sphere + continents + ground props). Hidden during a surface dive — the
+          SurfaceView terrain patch replaces it as the ground you stand on. */}
+      <group ref={spin} visible={!showSurface}>
         <mesh
           onClick={(e: ThreeEvent<MouseEvent>) => {
             e.stopPropagation();
@@ -163,7 +177,7 @@ export function PlanetView({
 
       {/* [tech props] Orbital structures ring the world — OUTSIDE the spin group so the ring
           keeps its own slow revolution, independent of the surface spin. Settled worlds only. */}
-      {planet.settled && (
+      {planet.settled && !showSurface && (
         <OrbitTechProps
           planet={planet}
           radius={radius}
@@ -172,16 +186,30 @@ export function PlanetView({
         />
       )}
 
-      {/* Settled worlds wear a subtle glowing ring. */}
-      {planet.settled && (
+      {/* [surface dive] The landed terrain patch, only on the focused planet while the camera
+          is at the surface. Outside the spin group so the ground stays put under the camera. */}
+      {showSurface && surfaceFocus && (
+        <SurfaceView
+          planet={planet}
+          game={game}
+          radius={radius}
+          normal={surfaceFocus.normal}
+          reducedMotion={reducedMotion}
+        />
+      )}
+
+      {/* Settled worlds wear a subtle glowing ring (hidden at the surface — it sits at the
+          ground plane and would z-fight the terrain patch). */}
+      {planet.settled && !showSurface && (
         <mesh rotation={[Math.PI / 2, 0, 0]}>
           <ringGeometry args={[radius * 1.35, radius * 1.55, 48]} />
           <meshBasicMaterial color={settleGlow(planet)} transparent opacity={0.5} />
         </mesh>
       )}
 
-      {/* Selection halo (cosmetic, view-only). */}
-      {isSelected && (
+      {/* Selection halo (cosmetic, view-only) — hidden during a surface dive, where the
+          camera sits inside it and the wireframe would smear across the view. */}
+      {isSelected && !showSurface && (
         <mesh>
           <sphereGeometry args={[radius * 1.12, 16, 16]} />
           <meshBasicMaterial color={PALETTE.glow} wireframe transparent opacity={0.25} />

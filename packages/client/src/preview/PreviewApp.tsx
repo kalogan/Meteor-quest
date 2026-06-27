@@ -7,6 +7,7 @@ import { WorldView } from "../world/WorldView";
 import { PlanetView } from "../world/PlanetView";
 import { PROP_COMPONENTS } from "../world/props/registry";
 import { PropTooltip } from "../ui/PropTooltip";
+import { SurfaceControl } from "../ui/SurfaceControl";
 import { IntroCinematic } from "../ui/intro/IntroCinematic";
 import { useSim } from "../sim/store";
 import { useSelection } from "../sim/selection";
@@ -24,13 +25,14 @@ import { biomeGallery, flightTestState, listBiomes, listTech, listTechProps, pre
  * Production-truthful: it mounts the SAME WorldView/PlanetView the game ships and
  * the SAME content pack via the seam (dataSource) — never a fork "for preview".
  */
-type Mode = "world" | "biomes" | "tech" | "props" | "flight" | "intro";
+type Mode = "world" | "biomes" | "tech" | "props" | "surface" | "flight" | "intro";
 
 const MODES: { id: Mode; label: string }[] = [
   { id: "world", label: "World" },
   { id: "biomes", label: "Biomes" },
   { id: "tech", label: "Tech" },
   { id: "props", label: "Tech props" },
+  { id: "surface", label: "Surface" },
   { id: "flight", label: "Flight" },
   { id: "intro", label: "Intro" },
 ];
@@ -52,7 +54,7 @@ export function PreviewApp() {
   // seed 0 == the on-disk identity world and every seed is reproducible. Flight and
   // Intro modes install their OWN world, so don't stomp it with a plain reset.
   useEffect(() => {
-    if (mode !== "flight" && mode !== "intro") reset(seed);
+    if (mode !== "flight" && mode !== "intro" && mode !== "surface") reset(seed);
   }, [seed, reset, mode]);
 
   const tech = useMemo(() => listTech(), []);
@@ -118,6 +120,7 @@ export function PreviewApp() {
         {mode === "biomes" && <BiomeGalleryMode seed={seed} frozen={frozen} onInspect={select} />}
         {mode === "tech" && <TechMode tech={tech} />}
         {mode === "props" && <TechPropsGalleryMode frozen={frozen} />}
+        {mode === "surface" && <SurfaceMode seed={seed} frozen={frozen} />}
         {mode === "flight" && <FlightMode seed={seed} frozen={frozen} />}
         {mode === "intro" && <IntroMode seed={seed} />}
       </main>
@@ -282,6 +285,45 @@ function TechPropsGalleryMode({ frozen }: { frozen: boolean }) {
           </figure>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * Surface dive mode — mounts the REAL WorldView, focuses the cradle, and descends to the
+ * landed surface pose so the Director can eyeball + tune the terrain patch / horizon /
+ * structures. Uses the SAME selection.requestFrame path the in-game Descend button uses;
+ * the SurfaceControl button toggles descend ↔ pull-up here too. Seeds tech so the colony's
+ * structures appear on the patch.
+ */
+function SurfaceMode({ seed, frozen }: { seed: number; frozen: boolean }) {
+  const setGame = useSim((s) => s.setGame);
+  const select = useSelection((s) => s.select);
+  const requestFrame = useSelection((s) => s.requestFrame);
+
+  useEffect(() => {
+    // A scanned, structure-rich cradle so the patch has a colony to show.
+    const g = previewState(seed);
+    g.research.unlocked = [
+      "basic_industry", "refining", "power_grid", "fusion", "federal_admin", "planetary_gov",
+      "rocketry", "biolabs", "basic_sensors", "deep_sensors",
+    ];
+    setGame(g);
+    select(g.cradlePlanetId, "planet");
+    const t = setTimeout(() => requestFrame("surface"), 450); // let the planet framing settle, then dive
+    return () => clearTimeout(t);
+  }, [seed, setGame, select, requestFrame]);
+
+  return (
+    <div style={{ position: "absolute", inset: 0 }} data-testid="surface-mode">
+      <Canvas
+        data-testid="surface-canvas"
+        frameloop={frozen ? "demand" : "always"}
+        camera={{ position: [6, 5, 9], fov: 50, near: 0.1, far: 2000 }}
+      >
+        <WorldView />
+      </Canvas>
+      <SurfaceControl />
     </div>
   );
 }

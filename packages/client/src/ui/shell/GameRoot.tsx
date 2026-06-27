@@ -4,6 +4,7 @@ import { WorldView } from "../../world/WorldView";
 import { Hud } from "../Hud";
 import { PropTooltip } from "../PropTooltip";
 import { GovernorHint } from "../GovernorHint";
+import { SurfaceControl } from "../SurfaceControl";
 import { useGameLoop } from "../../sim/useGameLoop";
 import { useAppPhase } from "../../sim/appPhase";
 import { PauseMenu } from "./PauseMenu";
@@ -45,6 +46,8 @@ export function GameRoot() {
       <PropTooltip />
       {/* [onboarding] Once-ever hint the first time authority promotes past city tier. */}
       <GovernorHint />
+      {/* [surface dive] Descend / pull-up control when a planet is focused. */}
+      <SurfaceControl />
       {phase === "paused" ? (
         <div className="shell-root">
           <PauseMenu onResume={() => useAppPhase.getState().setPhase("playing")} />
