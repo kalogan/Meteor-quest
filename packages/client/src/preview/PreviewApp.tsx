@@ -8,6 +8,7 @@ import { PlanetView } from "../world/PlanetView";
 import { PROP_COMPONENTS } from "../world/props/registry";
 import { PropTooltip } from "../ui/PropTooltip";
 import { SurfaceControl } from "../ui/SurfaceControl";
+import { SurfaceTuner } from "./SurfaceTuner";
 import { IntroCinematic } from "../ui/intro/IntroCinematic";
 import { useSim } from "../sim/store";
 import { useSelection } from "../sim/selection";
@@ -324,6 +325,7 @@ function SurfaceMode({ seed, frozen }: { seed: number; frozen: boolean }) {
         <WorldView />
       </Canvas>
       <SurfaceControl />
+      <SurfaceTuner />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import type { CameraControlsImpl } from "@react-three/drei";
 import { Vector3 } from "three";
 import type { GameState } from "@meteor/shared";
 import { useSelection } from "../sim/selection";
+import { useSurfaceConfig } from "../sim/surfaceConfig";
 import { activeJourney } from "./JourneyView";
 import {
   framingDistance,
@@ -139,13 +140,14 @@ export function CameraRig({ game }: { game: GameState }) {
     // works for a plain planet selection too, where resolveWorldPosition gives the centre)
     // — the planet's local axes equal world axes here, so the local normal is the outward
     // world normal. Stand a little above the ground and look forward along the tangent.
+    const cfg = useSurfaceConfig.getState();
     const up = new Vector3(fn.normal[0], fn.normal[1], fn.normal[2]).normalize();
     const surf = new Vector3(center[0] + up.x * r, center[1] + up.y * r, center[2] + up.z * r);
     let t = new Vector3().crossVectors(up, new Vector3(0, 1, 0));
     if (t.lengthSq() < 1e-4) t = new Vector3().crossVectors(up, new Vector3(1, 0, 0));
     t.normalize();
-    const eye = surf.clone().addScaledVector(up, r * 0.22).addScaledVector(t, -r * 0.15);
-    const look = surf.clone().addScaledVector(t, r * 1.3).addScaledVector(up, -r * 0.04);
+    const eye = surf.clone().addScaledVector(up, r * cfg.eyeHeight).addScaledVector(t, -r * cfg.standBack);
+    const look = surf.clone().addScaledVector(t, r * cfg.lookAhead).addScaledVector(up, -r * cfg.lookDrop);
     cc.setLookAt(eye.x, eye.y, eye.z, look.x, look.y, look.z, true);
   };
 
@@ -267,8 +269,9 @@ export function CameraRig({ game }: { game: GameState }) {
           const justEntered = !nearRef.current;
 
           // Keyboard roam (desktop): WASD / arrows move along the ground.
+          const cfg = useSurfaceConfig.getState();
           const k = keys.current;
-          const speed = r * 1.7 * delta;
+          const speed = r * cfg.roamSpeed * delta;
           let fwd = 0;
           let strafe = 0;
           if (k.has("w") || k.has("arrowup")) fwd += 1;
@@ -291,7 +294,7 @@ export function CameraRig({ game }: { game: GameState }) {
           const translated = !justEntered && _scratch.current.lengthSq() > (r * 0.004) ** 2;
 
           let changed = false;
-          const eyeH = r * 0.22;
+          const eyeH = r * cfg.eyeHeight;
           if (translated) {
             // Re-level camera + target together → camera back to eye height, gaze pitch kept.
             const dh = eyeH - h;
@@ -302,8 +305,8 @@ export function CameraRig({ game }: { game: GameState }) {
           }
           // Soft pitch clamp via height bounds (camera only): can't orbit to bird's-eye or
           // dip the view below the ground.
-          const hMin = r * 0.08;
-          const hMax = r * 0.62;
+          const hMin = r * cfg.pitchMin;
+          const hMax = r * cfg.pitchMax;
           const clampedH = h < hMin ? hMin : h > hMax ? hMax : h;
           if (clampedH !== h) {
             _camPos.current.addScaledVector(up, clampedH - h);

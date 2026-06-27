@@ -3,6 +3,8 @@ import { BufferGeometry, Float32BufferAttribute, Matrix4, Quaternion, Vector3 } 
 import { getContentPack, type GameState, type Planet, type PropKind, type TechProp } from "@meteor/shared";
 import { PROP_COMPONENTS } from "./props/registry";
 import { biomePropTint, planetColor } from "./palette";
+import { buildTerrainGeometry, hashStr, makeHeightField, mulberry32 } from "./surfaceTerrain";
+import { useSurfaceConfig } from "../sim/surfaceConfig";
 
 /**
  * [surface dive] The closest view — a low-poly TERRAIN PATCH the camera lands on when it
@@ -12,79 +14,13 @@ import { biomePropTint, planetColor } from "./palette";
  * the edges into a curved horizon, an atmospheric haze band ringing that horizon, and the
  * colony's unlocked structures scaled up onto the surface.
  *
- * Purely cosmetic + deterministic (seeded from the planet id) — reads only the planet + the
- * resolved content pack, allocates its geometry once in useMemo, and holds still under
- * reduced motion (the structures it hosts honor it themselves).
+ * All shape/look knobs come from `useSurfaceConfig` (defaults = the previously-inlined
+ * values) so the preview harness can tune them live. Purely cosmetic + deterministic
+ * (seeded from the planet id).
  */
 
 const UP = new Vector3(0, 1, 0);
 const pack = getContentPack();
-
-function hashStr(s: string): number {
-  let h = 2166136261;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-/** A deterministic height field over the tangent patch: low relief minus an edge dome. */
-function makeHeightField(seed: string, size: number, radius: number) {
-  const rng = mulberry32(hashStr(seed) ^ 0x5ee5);
-  const N = 6; // control-grid resolution
-  const ctrl: number[] = Array.from({ length: (N + 1) * (N + 1) }, () => rng() * 2 - 1);
-  const relAmp = radius * 0.1;
-  const domeAmp = radius * 0.16; // gentle edge curve → a distant horizon, not a falling cliff
-  const half = size / 2;
-  const g = (a: number, b: number) =>
-    ctrl[Math.min(N, Math.max(0, b)) * (N + 1) + Math.min(N, Math.max(0, a))] ?? 0;
-  return (x: number, z: number): number => {
-    const u = ((x + half) / size) * N;
-    const v = ((z + half) / size) * N;
-    const i = Math.floor(u);
-    const j = Math.floor(v);
-    const fu = u - i;
-    const fv = v - j;
-    const rel =
-      (g(i, j) * (1 - fu) + g(i + 1, j) * fu) * (1 - fv) +
-      (g(i, j + 1) * (1 - fu) + g(i + 1, j + 1) * fu) * fv;
-    const d = Math.min(1.3, Math.hypot(x, z) / half);
-    return rel * relAmp - d * d * domeAmp;
-  };
-}
-
-/** Flat-shaded (non-indexed) grid mesh from the height field. */
-function buildGeometry(heightAt: (x: number, z: number) => number, size: number, segs: number): BufferGeometry {
-  const pos: number[] = [];
-  const step = size / segs;
-  const half = size / 2;
-  const v = (x: number, z: number) => pos.push(x, heightAt(x, z), z);
-  for (let i = 0; i < segs; i++) {
-    for (let j = 0; j < segs; j++) {
-      const x0 = -half + i * step;
-      const x1 = x0 + step;
-      const z0 = -half + j * step;
-      const z1 = z0 + step;
-      // Wind CCW-from-above so vertex normals point +Y (up) — else the ground lights from below.
-      v(x0, z0); v(x0, z1); v(x1, z1); // tri 1
-      v(x0, z0); v(x1, z1); v(x1, z0); // tri 2
-    }
-  }
-  const geo = new BufferGeometry();
-  geo.setAttribute("position", new Float32BufferAttribute(pos, 3));
-  geo.computeVertexNormals();
-  return geo;
-}
 
 /** Vertical haze band ringing the horizon: bright at the ground, fading up. */
 function buildHaze(radius: number, size: number, tint: string): BufferGeometry {
@@ -99,8 +35,6 @@ function buildHaze(radius: number, size: number, tint: string): BufferGeometry {
     const a1 = ((i + 1) / segs) * Math.PI * 2;
     const x0 = Math.cos(a0) * r, z0 = Math.sin(a0) * r;
     const x1 = Math.cos(a1) * r, z1 = Math.sin(a1) * r;
-    // quad (x0,0)-(x1,0)-(x1,h)-(x0,h) as two tris; alpha encoded in the green-ish? we use
-    // vertex colors only (alpha from material opacity + a fade baked into brightness).
     const lo = [top.r, top.g, top.b];
     const hi = [top.r * 0.15, top.g * 0.18, top.b * 0.25];
     pos.push(x0, -radius * 0.05, z0, x1, -radius * 0.05, z1, x1, h, z1);
@@ -145,9 +79,8 @@ export function SurfaceView({
   normal: [number, number, number];
   reducedMotion: boolean;
 }) {
-  // A roomy arena so you can roam (CameraRig WASD/truck) without reaching the rim before the
-  // camera's surface-exit threshold pulls you back to orbit.
-  const size = radius * 14;
+  const cfg = useSurfaceConfig();
+  const size = radius * cfg.arenaSize;
   const tint = planetColor(planet);
   const accent = biomePropTint(planet);
 
@@ -165,8 +98,11 @@ export function SurfaceView({
     return { quaternion: [q.x, q.y, q.z, q.w] as [number, number, number, number], position: [pos.x, pos.y, pos.z] as [number, number, number] };
   }, [normal, radius]);
 
-  const heightAt = useMemo(() => makeHeightField(planet.id, size, radius), [planet.id, size, radius]);
-  const ground = useMemo(() => buildGeometry(heightAt, size, 44), [heightAt, size]);
+  const heightAt = useMemo(
+    () => makeHeightField(planet.id, size, radius * cfg.relief, radius * cfg.dome),
+    [planet.id, size, radius, cfg.relief, cfg.dome],
+  );
+  const ground = useMemo(() => buildTerrainGeometry(heightAt, size, cfg.segs), [heightAt, size, cfg.segs]);
   const haze = useMemo(() => buildHaze(radius, size, accent), [radius, size, accent]);
 
   // Scatter the colony's structures across the central, flatter part of the patch.
@@ -174,16 +110,13 @@ export function SurfaceView({
     const props = unlockedGroundProps(game);
     if (props.length === 0) return [];
     const rng = mulberry32(hashStr(planet.id) ^ 0xc0ffee);
-    // Place them in the forward arc (+Z = camera gaze), fanned out in X, so the colony reads
-    // as "ahead of you" when you land.
-    const n = Math.min(6, props.length);
+    const n = Math.min(cfg.structureCount, props.length);
     return props.slice(0, n).map((p, i) => {
-      // A row of buildings on the near ground, just ahead of and below the camera's eyeline.
       const z = size * 0.045 + (size * 0.12 * i) / Math.max(1, n - 1);
       const x = (i - (n - 1) / 2) * size * 0.08 + (rng() - 0.5) * size * 0.02;
-      return { key: `${p.kind}:${i}`, kind: p.kind, x, z, y: heightAt(x, z), scale: radius * 0.2 * (0.9 + rng() * 0.2) };
+      return { key: `${p.kind}:${i}`, kind: p.kind, x, z, y: heightAt(x, z), scale: radius * cfg.structureScale * (0.9 + rng() * 0.2) };
     });
-  }, [game.research.unlocked, planet.id, size, radius, heightAt]);
+  }, [game.research.unlocked, planet.id, size, radius, heightAt, cfg.structureCount, cfg.structureScale]);
 
   return (
     <group position={orient.position} quaternion={orient.quaternion}>
@@ -194,7 +127,7 @@ export function SurfaceView({
 
       {/* Horizon atmosphere band (cosmetic; never eats picks). */}
       <mesh geometry={haze} raycast={() => null}>
-        <meshBasicMaterial vertexColors transparent opacity={0.22} depthWrite={false} side={2} />
+        <meshBasicMaterial vertexColors transparent opacity={cfg.hazeOpacity} depthWrite={false} side={2} />
       </mesh>
 
       {/* Local lighting so the patch + structures read at the landed angle: a sky fill + a
