@@ -3,6 +3,7 @@ import { Stars } from "@react-three/drei";
 import { useSim } from "../sim/store";
 import { useSelection } from "../sim/selection";
 import { GalaxyView } from "./GalaxyView";
+import { JourneyView, JourneySteering } from "./JourneyView";
 import { CameraRig } from "./CameraRig";
 
 /**
@@ -37,6 +38,12 @@ export function WorldView() {
       <hemisphereLight color="#9fb4ff" groundColor="#0a0c14" intensity={0.3} />
 
       <GalaxyView game={game} />
+
+      {/* In-flight expeditions: the visible ship + trail (only when one is flying). */}
+      <JourneyView game={game} />
+      {/* Key-based light steering (no render); active only while a journey is enroute. */}
+      <JourneySteering game={game} />
+
       <CameraRig game={game} />
     </>
   );
