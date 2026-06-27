@@ -2,5 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm --filter @meteor/client build",
-  "outputDirectory": "packages/client/dist"
+  "outputDirectory": "packages/client/dist",
+  "cleanUrls": true
 }
