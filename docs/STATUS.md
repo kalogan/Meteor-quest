@@ -2,6 +2,24 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Tech props — hover tooltip + intro foundry (tasks #33–35) — done, verified
+- "What built this?" HOVER: hovering a structure in the God-view pops a cursor-following
+  card (structure name + blurb + the tech that built it, e.g. "Foundry · Built by Basic
+  Industry · materials"). New `sim/propHover` store written via `getState()` so hovering
+  NEVER re-renders the 3D scene (only the tiny `ui/PropTooltip` subscribes); `PROP_LABELS`
+  per kind; pointer handlers on each prop wrapper in TechPropsLayer; hide(kind) de-dupes
+  so sliding between props doesn't flicker. Mounted over the canvas in GameRoot + preview.
+  NOTE: hover is mouse-only (a deliberate choice over the accessible panel) — the data
+  isn't surfaced elsewhere yet, so a keyboard/touch path is a future a11y follow-up.
+- INTRO foundry: the cinematic now ends on the homeworld coming alive — the cradle's first
+  foundry rises out of the lit face (eased build-in) as the ship settles into orbit; shown
+  built under reduced motion. Anchored to the visible face (doesn't co-rotate during the
+  short cinematic) so the hero beat stays framed regardless of step pacing.
+- preview/main exposes __sim/__selection/__propHover for headless smokes (preview-only).
+- Architect smoke: intro foundry renders (console CLEAN); tooltip renders correct copy,
+  clears on leave, and fires on a REAL pointer-over of a framed prop (landed on the
+  Foundry). Gate GREEN. Screenshots reviewed (foundry on the cradle face; tooltip card).
+
 ## Tech props — structures per unlocked tech (tasks #28–32) — done, verified
 - The world now GROWS as you research: each tech carries an authored `prop` and, once
   unlocked, that structure appears on EVERY settled world. 16 distinct procedural
