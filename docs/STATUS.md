@@ -2,6 +2,35 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Playtest pass — balance fixes (tasks #37–39) — done, verified
+- Ran a headless optimal-auto-player over many seeds against the REAL sim. Found + fixed
+  two critical issues:
+  1. WINNABILITY. Home system = cradle only; nearest other system ~92 but ungated tech
+     reaches sensor ~130 / range ~190, so the OBVIOUS path only settles Vega (cradle+2=3
+     worlds) — one short of the 4-world victory; the 4th needed luck or an opaque
+     silicate→long-range-sensor detour (~8% of seeds had NO reachable 4th; competent win
+     rate ~60%). FIX (worldgen): a GUARANTEED 2nd near system "Proxima Reach" (2 planets,
+     distance ≤ ungated sensor envelope, far side of the disc from Vega), consuming one
+     scatter slot (systemCount unchanged). Competent-player win rate 60% → **100%** over
+     30 seeds, ~5 min median.
+  2. GOVERNOR PROMOTION TRAP. On promotion, production switches city-focus → tier
+     governor, which defaulted to minerals → research SILENTLY flat-lined (a naive run
+     stalled ~166 min). Root cause: tech-completion promoted via applyTechEffects which
+     bypassed the seeding. FIX: route BOTH promotion paths through one `promoteTo()` that
+     seeds the new governor from the cities' current effective focus (ties→research). Plus
+     a once-ever UI `GovernorHint` teaching the concept on first promotion.
+- Verified: +9 sim regression tests (worldgen reach-per-seed; governor inherits focus) →
+  **116 sim tests**; win-rate harness 100%; real-game smoke — hint appears on a genuine
+  city→continent promotion, governors inherit Research (research keeps flowing +4.8/s),
+  axe 0, dismisses, console CLEAN. Gate GREEN.
+- NOTE: my FIRST harness over-claimed "40% unwinnable" — it under-modeled the optimal
+  player (rare resources are focus-producible, not settle-gated). True hard-unwinnable was
+  ~8%; the worldgen fix makes it 0% via the obvious path. Secondary, NOT yet actioned:
+  long opening with nothing reachable until warp (~t520); raw minerals have no sink.
+- Save layout: createInitialState changed (adds sys-near) — affects NEW games only;
+  SAVE_VERSION not bumped (existing saves keep their old galaxy; the inherit fix is runtime
+  and benefits them too).
+
 ## Tech props — mobile gallery WebGL fix (task #36) — done, verified
 - BUG (mobile, reported via screenshot): the "Tech props" gallery rendered blank tiles +
   a context-lost icon. Cause: one `<Canvas>` per tile = 16 WebGL contexts; mobile browsers
