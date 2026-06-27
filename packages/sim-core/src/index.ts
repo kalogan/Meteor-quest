@@ -42,3 +42,9 @@ export {
   type SimEvent,
   type EventResponse,
 } from "./systems/threats.js";
+export {
+  runObjectives,
+  conditionMet,
+  nextObjective,
+  isObjectiveComplete,
+} from "./systems/objectives.js";

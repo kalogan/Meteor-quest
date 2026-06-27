@@ -4,6 +4,7 @@ import { runResearch } from "./systems/research.js";
 import { runFog } from "./systems/fog.js";
 import { runThreats } from "./systems/threats.js";
 import { runJourneys } from "./systems/journeys.js";
+import { runObjectives } from "./systems/objectives.js";
 
 /**
  * Advance the simulation by exactly ONE fixed tick. Pure + deterministic: the same
@@ -16,7 +17,8 @@ import { runJourneys } from "./systems/journeys.js";
  *   2. research — accrue points, complete tech, apply effects (range/sensors/tiers).
  *   3. fog      — reveal systems now within (possibly grown) sensor range.
  *   4. threats  — spawn/resolve seeded events; may cost territory + demote authority.
- *   5. journeys — advance in-flight expeditions (autopilot + fuel burn + arrival).
+ *   5. journeys   — advance in-flight expeditions (autopilot + fuel burn + arrival).
+ *   6. objectives — complete pending goals whose condition now holds; set the win flag.
  */
 export function tick(prev: GameState): GameState {
   const state: GameState = structuredClone(prev);
@@ -26,6 +28,7 @@ export function tick(prev: GameState): GameState {
   runFog(state);
   runThreats(state);
   runJourneys(state);
+  runObjectives(state);
   return state;
 }
 
