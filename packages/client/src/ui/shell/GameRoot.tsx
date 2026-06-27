@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { WorldView } from "../../world/WorldView";
 import { Hud } from "../Hud";
+import { PropTooltip } from "../PropTooltip";
 import { useGameLoop } from "../../sim/useGameLoop";
 import { useAppPhase } from "../../sim/appPhase";
 import { PauseMenu } from "./PauseMenu";
@@ -39,6 +40,8 @@ export function GameRoot() {
         <WorldView />
       </Canvas>
       <Hud />
+      {/* [tech props] Cursor-following "what built this?" tooltip when hovering a structure. */}
+      <PropTooltip />
       {phase === "paused" ? (
         <div className="shell-root">
           <PauseMenu onResume={() => useAppPhase.getState().setPhase("playing")} />

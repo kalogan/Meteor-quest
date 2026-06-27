@@ -4,11 +4,12 @@ import { Stars } from "@react-three/drei";
 import { Quaternion, Vector3 } from "three";
 import type { Group, PerspectiveCamera } from "three";
 import type { GameState, Planet } from "@meteor/shared";
-import { PALETTE } from "./palette";
+import { PALETTE, biomePropTint } from "./palette";
 import { planetRadius } from "./layout";
 import { PlanetView } from "./PlanetView";
 import { MiningProbe } from "./MiningProbe";
 import { Ship } from "./Ship";
+import { Foundry } from "./props/GroundProps";
 
 /**
  * The cinematic runs in three scripted STAGES, derived from the active onboarding step
@@ -47,6 +48,8 @@ const ORBIT_SPEED = 0.32;
 
 /** Reused scratch so per-frame orientation work allocates nothing. */
 const FORWARD = new Vector3(0, 0, 1);
+/** Local up — used to stand the cradle's first foundry on the surface normal. */
+const UP = new Vector3(0, 1, 0);
 /** The probe's local "down the beam" axis; we aim it at the planet centre. */
 const DOWN = new Vector3(0, -1, 0);
 const _dir = new Vector3();
@@ -200,6 +203,64 @@ function IntroDirector({
   );
 }
 
+/**
+ * [tech props] The cradle's FIRST structure, built into the cinematic: a foundry that
+ * rises out of the surface once the ship settles into orbit (stage "orbit"/"mining"), so
+ * the onboarding ends on the homeworld visibly coming alive. It sits on the surface (base
+ * on the sphere, +Y along the normal) and co-rotates with the planet at PlanetView's cradle
+ * spin rate, so it reads as planted. Cosmetic; under reduced motion it's shown already
+ * built. Front-upper placement so it's framed by the orbit camera.
+ */
+function IntroFoundry({
+  radius,
+  tint,
+  stage,
+  reducedMotion,
+}: {
+  radius: number;
+  tint: string;
+  stage: IntroStage;
+  reducedMotion: boolean;
+}) {
+  const grow = useRef<Group>(null);
+  const build = useRef(reducedMotion ? 1 : 0);
+  const built = stage === "orbit" || stage === "mining";
+
+  // Front-and-slightly-up on the visible disc (the orbit camera looks from +z/+y), so the
+  // foundry reads clearly as it rises — away from the limb where the ship/probe orbit.
+  const normal = useMemo(() => new Vector3(-0.12, 0.3, 0.95).normalize(), []);
+  const pos = useMemo<[number, number, number]>(() => {
+    const p = normal.clone().multiplyScalar(radius * 0.98);
+    return [p.x, p.y, p.z];
+  }, [normal, radius]);
+  const quat = useMemo<[number, number, number, number]>(() => {
+    const q = new Quaternion().setFromUnitVectors(UP, normal);
+    return [q.x, q.y, q.z, q.w];
+  }, [normal]);
+  const maxScale = radius * 0.2;
+
+  useFrame((_, dt) => {
+    if (reducedMotion) build.current = built ? 1 : 0;
+    else if (built) build.current = Math.min(1, build.current + dt / 1.5);
+    if (grow.current) {
+      const s = easeInOut(build.current);
+      grow.current.scale.setScalar(s * maxScale);
+      grow.current.visible = s > 0.002;
+    }
+  });
+
+  // Anchored to the cradle's lit face (it doesn't co-rotate during the short cinematic),
+  // so the rising foundry stays framed for the hero beat regardless of how long the player
+  // lingers on the early steps.
+  return (
+    <group position={pos} quaternion={quat}>
+      <group ref={grow} scale={0}>
+        <Foundry tint={tint} reducedMotion={reducedMotion} />
+      </group>
+    </group>
+  );
+}
+
 export function IntroScene({
   game,
   planet,
@@ -227,6 +288,11 @@ export function IntroScene({
 
       {/* The REAL cradle planet, at the origin — full scanned biome treatment. */}
       <PlanetView planet={planet} game={game} isCradle={isCradle} position={[0, 0, 0]} />
+
+      {/* [tech props] The homeworld's first foundry rises as the ship reaches orbit. */}
+      {isCradle && (
+        <IntroFoundry radius={radius} tint={biomePropTint(planet)} stage={stage} reducedMotion={reducedMotion} />
+      )}
 
       <IntroDirector radius={radius} reducedMotion={reducedMotion} stage={stage} />
     </>

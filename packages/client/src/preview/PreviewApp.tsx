@@ -6,6 +6,7 @@ import type { GameState } from "@meteor/shared";
 import { WorldView } from "../world/WorldView";
 import { PlanetView } from "../world/PlanetView";
 import { PROP_COMPONENTS } from "../world/props/registry";
+import { PropTooltip } from "../ui/PropTooltip";
 import { IntroCinematic } from "../ui/intro/IntroCinematic";
 import { useSim } from "../sim/store";
 import { useSelection } from "../sim/selection";
@@ -120,6 +121,8 @@ export function PreviewApp() {
         {mode === "flight" && <FlightMode seed={seed} frozen={frozen} />}
         {mode === "intro" && <IntroMode seed={seed} />}
       </main>
+      {/* [tech props] Hover-a-structure tooltip, available over every 3D mode. */}
+      <PropTooltip />
     </div>
   );
 }

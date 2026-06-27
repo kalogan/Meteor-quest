@@ -1,9 +1,11 @@
 import { useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { Quaternion, Vector3 } from "three";
 import type { Group } from "three";
-import { getContentPack, type Planet, type PropKind, type TechProp } from "@meteor/shared";
+import { getContentPack, type Planet, type PropKind, type TechNode, type TechProp } from "@meteor/shared";
 import { PROP_COMPONENTS } from "./props/registry";
+import { PROP_LABELS } from "./props/labels";
+import { usePropHover } from "../sim/propHover";
 import { biomePropTint } from "./palette";
 
 /**
@@ -61,12 +63,15 @@ function spherePoint(i: number, total: number): [number, number, number] {
   return [Math.cos(theta) * r, y, Math.sin(theta) * r];
 }
 
-/** Resolve the tech `prop`s that should appear on a settled world right now. */
-function unlockedProps(unlocked: string[], placement: TechProp["placement"]): TechProp[] {
+/** Resolve the tech + its `prop` that should appear on a settled world right now. */
+function unlockedProps(
+  unlocked: string[],
+  placement: TechProp["placement"],
+): { tech: TechNode; prop: TechProp }[] {
   const owned = new Set(unlocked);
   return pack.tech
     .filter((t) => t.prop && t.prop.placement === placement && owned.has(t.id))
-    .map((t) => t.prop as TechProp);
+    .map((t) => ({ tech: t, prop: t.prop as TechProp }));
 }
 
 interface PlacedProp {
@@ -76,6 +81,33 @@ interface PlacedProp {
   /** Quaternion as [x,y,z,w] for the wrapping group. */
   quaternion: [number, number, number, number];
   scale: number;
+  /** Hover-tooltip metadata ("what built this?"). */
+  title: string;
+  blurb: string;
+  techName: string;
+  category: string;
+}
+
+/** Pointer handlers that drive the hover tooltip via the store (getState — no re-render). */
+function hoverHandlers(p: PlacedProp) {
+  return {
+    onPointerOver: (e: ThreeEvent<PointerEvent>) => {
+      e.stopPropagation();
+      usePropHover.getState().show(
+        { kind: p.kind, title: p.title, blurb: p.blurb, techName: p.techName, category: p.category },
+        e.nativeEvent.clientX,
+        e.nativeEvent.clientY,
+      );
+    },
+    onPointerMove: (e: ThreeEvent<PointerEvent>) => {
+      e.stopPropagation();
+      usePropHover.getState().move(e.nativeEvent.clientX, e.nativeEvent.clientY);
+    },
+    onPointerOut: (e: ThreeEvent<PointerEvent>) => {
+      e.stopPropagation();
+      usePropHover.getState().hide(p.kind);
+    },
+  };
 }
 
 /**
@@ -103,7 +135,7 @@ export function GroundTechProps({
     const ca = Math.cos(spin);
     const sa = Math.sin(spin);
     const total = props.length + 2; // pad so we avoid clustering at the poles
-    return props.map((tp, i) => {
+    return props.map(({ tech, prop }, i) => {
       const [nx, ny, nz] = spherePoint(i + 1, total);
       // Rotate the scatter around Y by the seed so worlds differ.
       const rx = nx * ca + nz * sa;
@@ -112,13 +144,18 @@ export function GroundTechProps({
       const position = normal.clone().multiplyScalar(radius * 0.98);
       const q = new Quaternion().setFromUnitVectors(UP, normal);
       const jitter = 0.88 + rng() * 0.24;
-      const scale = radius * 0.16 * (tp.scale ?? 1) * jitter;
+      const scale = radius * 0.16 * (prop.scale ?? 1) * jitter;
+      const label = PROP_LABELS[prop.kind];
       return {
-        key: `${tp.kind}:${i}`,
-        kind: tp.kind,
+        key: `${prop.kind}:${i}`,
+        kind: prop.kind,
         position: [position.x, position.y, position.z],
         quaternion: [q.x, q.y, q.z, q.w],
         scale,
+        title: label.title,
+        blurb: label.blurb,
+        techName: tech.name,
+        category: tech.category,
       };
     });
   }, [planet.id, radius, unlocked]);
@@ -128,7 +165,7 @@ export function GroundTechProps({
       {placed.map((p) => {
         const Comp = PROP_COMPONENTS[p.kind];
         return (
-          <group key={p.key} position={p.position} quaternion={p.quaternion} scale={p.scale}>
+          <group key={p.key} position={p.position} quaternion={p.quaternion} scale={p.scale} {...hoverHandlers(p)}>
             <Comp tint={tint} reducedMotion={reducedMotion} />
           </group>
         );
@@ -167,7 +204,7 @@ export function OrbitTechProps({
     const phase = rng() * Math.PI * 2;
     const orbitR = radius * 2.1;
     const m = Math.max(1, props.length);
-    return props.map((tp, i) => {
+    return props.map(({ tech, prop }, i) => {
       const a = phase + (i * Math.PI * 2) / m;
       const x = Math.cos(a) * orbitR;
       const z = Math.sin(a) * orbitR;
@@ -179,13 +216,18 @@ export function OrbitTechProps({
           ? new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), dir.normalize())
           : new Quaternion();
       const jitter = 0.9 + rng() * 0.2;
-      const scale = radius * 0.2 * (tp.scale ?? 1) * jitter;
+      const scale = radius * 0.2 * (prop.scale ?? 1) * jitter;
+      const label = PROP_LABELS[prop.kind];
       return {
-        key: `${tp.kind}:${i}`,
-        kind: tp.kind,
+        key: `${prop.kind}:${i}`,
+        kind: prop.kind,
         position: [x, y, z],
         quaternion: [q.x, q.y, q.z, q.w],
         scale,
+        title: label.title,
+        blurb: label.blurb,
+        techName: tech.name,
+        category: tech.category,
       };
     });
   }, [planet.id, radius, unlocked]);
@@ -203,7 +245,7 @@ export function OrbitTechProps({
       {placed.map((p) => {
         const Comp = PROP_COMPONENTS[p.kind];
         return (
-          <group key={p.key} position={p.position} quaternion={p.quaternion} scale={p.scale}>
+          <group key={p.key} position={p.position} quaternion={p.quaternion} scale={p.scale} {...hoverHandlers(p)}>
             <Comp tint={tint} reducedMotion={reducedMotion} />
           </group>
         );
