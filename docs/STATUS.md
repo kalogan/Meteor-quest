@@ -2,6 +2,22 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Surface roam — Tier 1.5 (task #45) — done, verified
+- Polish on the landed roam:
+  - Re-leveling now triggers on HORIZONTAL look-target translation (project out the up
+    component), not just WASD — so a TOUCH two-finger pan (CameraControls truck) is grounded
+    too; pure look/orbit (target fixed) is left alone. Camera+target lift together → eye
+    height kept, gaze pitch preserved.
+  - Soft PITCH CLAMP via height bounds (camera-only, surface-relative): orbit-look can't rise
+    to a bird's-eye or dip below the ground → no jarring snap on the next move.
+  - Feel: roam speed r×1.4 → r×1.7; hint → 'Move: WASD / two-finger · Look: drag'.
+- Verified: gate GREEN; smoke — WASD roam, then a hard drag-up (clamp holds: grounded horizon,
+  not bird's-eye), then move again (re-grounds at eye level), console CLEAN; screenshots
+  reviewed (before / look / after all sane).
+- REMAINING (per SURFACE_DIVE_SCOPE): Tier 2 walkable avatar (follow-cam, terrain-height
+  follow, collision). Mobile note: touch can now MOVE (two-finger, grounded) + look (drag) +
+  pinch-to-exit — a dedicated on-screen move control is still a possible nicety.
+
 ## Surface roam — Tier 1 (task #44) — done, verified
 - Once landed (surface dive) you can now ROAM across the ground: WASD / arrow keys translate
   the camera over the surface (CameraRig: cc.forward + cc.truck) with per-frame RE-LEVELING
