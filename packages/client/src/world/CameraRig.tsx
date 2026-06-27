@@ -58,9 +58,32 @@ export function CameraRig({ game }: { game: GameState }) {
   const _ship = useRef(new Vector3());
   const _lead = useRef(new Vector3());
   const _eye = useRef(new Vector3());
-  // [surface dive] scratch for the per-frame camera-to-planet proximity test.
+  // [surface dive] scratch for the per-frame camera-to-planet proximity test + roam.
   const _camPos = useRef(new Vector3());
   const _tmpCenter = useRef(new Vector3());
+  const _tmpTarget = useRef(new Vector3());
+  const _surfBase = useRef(new Vector3());
+  const _up = useRef(new Vector3());
+  // Latched nearSurface (hysteresis) + the set of held roam keys.
+  const nearRef = useRef(false);
+  const keys = useRef<Set<string>>(new Set());
+
+  // [surface dive] Roam keys (WASD / arrows) — only captured while landed, so arrows still
+  // steer an expedition in flight (mutually exclusive states).
+  useEffect(() => {
+    const ROAM = new Set(["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"]);
+    const down = (e: KeyboardEvent) => {
+      const k = e.key.toLowerCase();
+      if (ROAM.has(k) && nearRef.current) keys.current.add(k);
+    };
+    const up = (e: KeyboardEvent) => keys.current.delete(e.key.toLowerCase());
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+    };
+  }, []);
 
   // Smoothly frame the current selection (or the whole galaxy when nothing is
   // selected). Shared by the selection effect and the follow-exit so the camera eases
@@ -221,20 +244,63 @@ export function CameraRig({ game }: { game: GameState }) {
       setZoomTier(tier);
     }
 
-    // [surface dive] nearSurface = camera within ~1.6× the focused planet's radius of its
-    // CENTRE (not the look-target — the landed pose looks at the horizon, so eye→target is
-    // large). The store only updates on change, so this per-frame test costs no re-renders.
-    let near = false;
+    // [surface dive] nearSurface, measured from the focused planet's CENTRE (the landed pose
+    // looks at the horizon, so eye→target is large). HYSTERESIS: enter when close, exit only
+    // when well clear — so roaming horizontally across the surface doesn't pop back to orbit.
+    let near = nearRef.current;
     if (!journey && selectedId && selectedKind && selectedKind !== "system") {
       const fn = focusSurfaceNormal(game, selectedId, selectedKind);
       const center = fn ? resolveWorldPosition(game, fn.planet.id, "planet") : null;
       if (fn && center) {
         const r = planetRadius(fn.planet, fn.planet.id === game.cradlePlanetId);
         cc.getPosition(_camPos.current);
-        near = _camPos.current.distanceTo(_tmpCenter.current.set(center[0], center[1], center[2])) < r * 1.6;
+        _tmpCenter.current.set(center[0], center[1], center[2]);
+        const dist = _camPos.current.distanceTo(_tmpCenter.current);
+        near = nearRef.current ? dist < r * 5 : dist < r * 1.4;
+
+        // ── Roam: WASD / arrows translate the camera across the ground ────────────
+        if (near) {
+          _up.current.set(fn.normal[0], fn.normal[1], fn.normal[2]).normalize();
+          _surfBase.current.copy(_tmpCenter.current).addScaledVector(_up.current, r); // surface point
+          const k = keys.current;
+          const speed = r * 1.4 * delta;
+          let fwd = 0;
+          let strafe = 0;
+          if (k.has("w") || k.has("arrowup")) fwd += 1;
+          if (k.has("s") || k.has("arrowdown")) fwd -= 1;
+          if (k.has("d") || k.has("arrowright")) strafe += 1;
+          if (k.has("a") || k.has("arrowleft")) strafe -= 1;
+          if (fwd) cc.forward(fwd * speed, false);
+          if (strafe) cc.truck(strafe * speed, 0, false);
+          if (fwd || strafe) {
+            // Re-level to a fixed eye height above the tangent ground, so forward motion
+            // (which follows the slightly-downward gaze) doesn't sink the camera underground.
+            cc.getPosition(_camPos.current);
+            cc.getTarget(_tmpTarget.current);
+            const baseDot = _surfBase.current.dot(_up.current);
+            const h = _camPos.current.dot(_up.current) - baseDot;
+            const dh = r * 0.22 - h;
+            if (Math.abs(dh) > 1e-3) {
+              _camPos.current.addScaledVector(_up.current, dh);
+              _tmpTarget.current.addScaledVector(_up.current, dh);
+              cc.setLookAt(
+                _camPos.current.x, _camPos.current.y, _camPos.current.z,
+                _tmpTarget.current.x, _tmpTarget.current.y, _tmpTarget.current.z,
+                false,
+              );
+            }
+          }
+        }
+      } else {
+        near = false;
       }
+    } else {
+      near = false;
     }
-    setNearSurface(near);
+    if (near !== nearRef.current) {
+      nearRef.current = near;
+      setNearSurface(near);
+    }
   });
 
   return (

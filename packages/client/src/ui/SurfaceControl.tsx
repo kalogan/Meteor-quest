@@ -22,8 +22,28 @@ export function SurfaceControl() {
         bottom: "max(18px, env(safe-area-inset-bottom))",
         transform: "translateX(-50%)",
         zIndex: 40,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 8,
       }}
     >
+      {nearSurface && (
+        <div
+          data-testid="surface-roam-hint"
+          style={{
+            padding: "5px 12px",
+            font: '600 12px/1 system-ui, -apple-system, "Segoe UI", sans-serif',
+            color: "#cdd6e6",
+            background: "rgba(10, 14, 22, 0.82)",
+            border: "1px solid #2a3a5e",
+            borderRadius: 20,
+            backdropFilter: "blur(6px)",
+          }}
+        >
+          WASD / arrows to move · drag to look
+        </div>
+      )}
       <button
         data-testid="surface-toggle"
         onClick={() => requestFrame(nearSurface ? "planet" : "surface")}

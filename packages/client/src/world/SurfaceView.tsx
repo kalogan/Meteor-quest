@@ -145,7 +145,9 @@ export function SurfaceView({
   normal: [number, number, number];
   reducedMotion: boolean;
 }) {
-  const size = radius * 6.4;
+  // A roomy arena so you can roam (CameraRig WASD/truck) without reaching the rim before the
+  // camera's surface-exit threshold pulls you back to orbit.
+  const size = radius * 14;
   const tint = planetColor(planet);
   const accent = biomePropTint(planet);
 
@@ -164,7 +166,7 @@ export function SurfaceView({
   }, [normal, radius]);
 
   const heightAt = useMemo(() => makeHeightField(planet.id, size, radius), [planet.id, size, radius]);
-  const ground = useMemo(() => buildGeometry(heightAt, size, 30), [heightAt, size]);
+  const ground = useMemo(() => buildGeometry(heightAt, size, 44), [heightAt, size]);
   const haze = useMemo(() => buildHaze(radius, size, accent), [radius, size, accent]);
 
   // Scatter the colony's structures across the central, flatter part of the patch.
