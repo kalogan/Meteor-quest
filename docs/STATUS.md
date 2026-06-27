@@ -2,6 +2,17 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Cinematic intro (task #25) — done, verified
+- Replaced the off-screen-on-mobile onboarding dialog with a cinematic: fade from
+  black → a ship emerges and flies toward the real cradle planet → stepped onboarding
+  cards (4, click-through, Skip/Esc) → Begin hands off to play. New `intro` app-phase
+  (title→New Game→intro→playing; Continue/Restart skip it). Preview gains an "Intro"
+  mode (same component, replayable). Old IntroDialog + its hud.css rules deleted.
+- Architect runtime-smoke: New Game→intro plays→click-through→Begin→playing HUD;
+  **mobile (390px) card is centered + on-screen** (the bug, fixed); preview Intro tab
+  works; **axe 0 violations**; console CLEAN (no render-loop regression). Gate GREEN.
+- Taste knobs (DEFAULT_INTRO_STEPS copy, FLIGHT_SECONDS=6.5, curtain/appear timing).
+
 ## Objectives — goals + onboarding (tasks #22–24) — done, verified
 - One authored 10-step chain doubles as onboarding (teach) → goals → victory
   (galaxy tier + 4 worlds). Sim evaluates conditions each tick + sets `won`; UI = an
