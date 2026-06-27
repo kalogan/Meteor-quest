@@ -1,5 +1,11 @@
 import type { CSSProperties } from "react";
-import { COMMON_RESOURCES, RARE_RESOURCES, type ResourceId } from "@meteor/shared";
+import {
+  COMMON_RESOURCES,
+  RARE_RESOURCES,
+  getContentPack,
+  type GameState,
+  type ResourceId,
+} from "@meteor/shared";
 
 /**
  * Shared HUD look + small helpers. The overlay is a glassy dark panel set; the
@@ -54,4 +60,37 @@ export function severityLabel(severity: number): string {
   if (severity >= 8) return "critical";
   if (severity >= 4) return "serious";
   return "minor";
+}
+
+/** [slice 2] Tactical-defense economy, read from content via the shared seam.
+ * Mirrors the sim-core default so the build cost + yield shown to the player match
+ * what `buildDefense` actually spends (the sim stays authoritative). */
+export interface DefenseInfo {
+  buildCost: Partial<Record<ResourceId, number>>;
+  defensePerBuild: number;
+}
+
+const DEFAULT_DEFENSE: DefenseInfo = {
+  buildCost: { alloy: 10, energy: 10 },
+  defensePerBuild: 5,
+};
+
+export function defenseInfo(): DefenseInfo {
+  const cfg = getContentPack().defense;
+  if (!cfg) return DEFAULT_DEFENSE;
+  return { buildCost: cfg.buildCost, defensePerBuild: cfg.defensePerBuild };
+}
+
+/** Can the player currently afford this resource cost given their stockpiles? */
+export function canAfford(game: GameState, cost: Partial<Record<ResourceId, number>>): boolean {
+  return Object.entries(cost).every(
+    ([r, amount]) => (game.stockpiles[r as ResourceId] ?? 0) >= (amount ?? 0),
+  );
+}
+
+/** Render a cost map compactly, e.g. "10 alloy · 10 energy". */
+export function formatCost(cost: Partial<Record<ResourceId, number>>): string {
+  return Object.entries(cost)
+    .map(([r, amount]) => `${amount} ${r}`)
+    .join(" · ");
 }
