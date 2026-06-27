@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import type { GameState, Planet } from "@meteor/shared";
 import { useSim } from "../../sim/store";
-import { IntroScene } from "../../world/IntroScene";
-import { IntroOverlay, type IntroStep } from "./IntroOverlay";
+import { IntroScene, type IntroStage } from "../../world/IntroScene";
+import { DEFAULT_INTRO_STEPS, IntroOverlay, type IntroStep } from "./IntroOverlay";
 import "./intro.css";
 
 /**
@@ -15,6 +15,11 @@ import "./intro.css";
  *     blackness");
  *   - the stepped IntroOverlay card (Next / Begin, always-Skip, Escape = skip).
  *
+ * It also derives a 3D STAGE from the active onboarding step and feeds it to IntroScene,
+ * so the cinematic extends past the fly-in: the last two steps of the (default) sequence
+ * drive "orbit" (ship circles the world) then "mining" (a probe deploys and harvests).
+ * The overlay reports its step via onStepChange; the scene eases between stages.
+ *
  * Purely cosmetic: it READS the cradle planet from the sim (or takes one via `planet`)
  * and never advances or mutates game state — the loop is frozen during phase 'intro'.
  * `onFinish` fires when the player clicks Begin or Skip (or presses Escape); the host
@@ -23,6 +28,20 @@ import "./intro.css";
  * Reduced motion: the curtain lifts immediately and the scene snaps to its final
  * framing (IntroScene handles the camera/ship), while the overlay shows at once.
  */
+
+/**
+ * Map an active step index to a 3D stage. The extended sequence ends with an orbit step
+ * then a mining step; everything before is the fly-in. We key off distance from the END
+ * of the step list (rather than fixed indices) so a custom `steps` set still lines up,
+ * and we only enable orbit/mining when there are enough steps to carry those beats — a
+ * short custom set stays entirely in the fly-in.
+ */
+function stageForStep(index: number, stepCount: number): IntroStage {
+  if (stepCount < 6) return "flyin";
+  if (index >= stepCount - 1) return "mining";
+  if (index >= stepCount - 2) return "orbit";
+  return "flyin";
+}
 
 function reducedMotionNow(): boolean {
   if (typeof document !== "undefined") {
@@ -53,6 +72,11 @@ export function IntroCinematic({
   const sceneGame = game ?? storeGame;
   const cradle = planet ?? sceneGame.planets[sceneGame.cradlePlanetId];
 
+  const activeSteps = steps ?? DEFAULT_INTRO_STEPS;
+  const [stepIndex, setStepIndex] = useState(0);
+  const onStepChange = useCallback((i: number) => setStepIndex(i), []);
+  const stage = stageForStep(stepIndex, activeSteps.length);
+
   const reduced = reducedMotionNow();
   // The black curtain starts down and lifts on the next frame (immediately if reduced).
   const [lifted, setLifted] = useState(reduced);
@@ -80,7 +104,7 @@ export function IntroCinematic({
           frameloop="always"
           camera={{ position: [12, 3, 18], fov: 50, near: 0.1, far: 2000 }}
         >
-          <IntroScene game={sceneGame} planet={cradle} reducedMotion={reduced} />
+          <IntroScene game={sceneGame} planet={cradle} reducedMotion={reduced} stage={stage} />
         </Canvas>
       </div>
 
@@ -90,7 +114,7 @@ export function IntroCinematic({
         aria-hidden="true"
       />
 
-      <IntroOverlay steps={steps} onFinish={onFinish} />
+      <IntroOverlay steps={steps} onFinish={onFinish} onStepChange={onStepChange} />
     </div>
   );
 }

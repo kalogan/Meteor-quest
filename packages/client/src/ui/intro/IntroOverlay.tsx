@@ -42,6 +42,14 @@ export const DEFAULT_INTRO_STEPS: IntroStep[] = [
     title: "Always know your next move",
     body: "Follow the Objectives panel — it always shows the next step toward a galactic civilization.",
   },
+  {
+    title: "Enter orbit",
+    body: "Your ship settles into a slow orbit above the world, circling it as the camera pulls back to take in the whole planet.",
+  },
+  {
+    title: "Deploy the mining probe",
+    body: "Your probe extends its antenna and fires a mining beam at the surface, drawing glowing chunks of minerals up to harvest them. Watch it work, then begin.",
+  },
 ];
 
 function prefersReducedMotion(): boolean {
@@ -59,11 +67,15 @@ function prefersReducedMotion(): boolean {
 export function IntroOverlay({
   steps = DEFAULT_INTRO_STEPS,
   onFinish,
+  onStepChange,
   /** Delay (ms) before the card fades in, so the ship is seen emerging first. */
   appearDelayMs = 1400,
 }: {
   steps?: IntroStep[];
   onFinish: () => void;
+  /** Notified with the active step index (0-based) on mount and each advance, so the
+   *  host can drive the 3D scene's stage from the step. */
+  onStepChange?: (index: number) => void;
   appearDelayMs?: number;
 }) {
   const headingId = useId();
@@ -109,6 +121,12 @@ export function IntroOverlay({
   useEffect(() => {
     if (visible) primaryRef.current?.focus();
   }, [visible, index]);
+
+  // Report the active step so the host can drive the 3D scene's stage (fly-in → orbit →
+  // mining). Fires on mount and on every step change.
+  useEffect(() => {
+    onStepChange?.(index);
+  }, [index, onStepChange]);
 
   const onPrimary = () => {
     if (isLast) onFinish();
