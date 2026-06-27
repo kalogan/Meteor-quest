@@ -3,6 +3,7 @@ import { Canvas } from "@react-three/fiber";
 import { WorldView } from "../../world/WorldView";
 import { Hud } from "../Hud";
 import { PropTooltip } from "../PropTooltip";
+import { GovernorHint } from "../GovernorHint";
 import { useGameLoop } from "../../sim/useGameLoop";
 import { useAppPhase } from "../../sim/appPhase";
 import { PauseMenu } from "./PauseMenu";
@@ -42,6 +43,8 @@ export function GameRoot() {
       <Hud />
       {/* [tech props] Cursor-following "what built this?" tooltip when hovering a structure. */}
       <PropTooltip />
+      {/* [onboarding] Once-ever hint the first time authority promotes past city tier. */}
+      <GovernorHint />
       {phase === "paused" ? (
         <div className="shell-root">
           <PauseMenu onResume={() => useAppPhase.getState().setPhase("playing")} />
