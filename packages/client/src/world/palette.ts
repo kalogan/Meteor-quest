@@ -22,7 +22,34 @@ export const PALETTE = {
   city: "#f2d27a",
   cityFog: "#444a57",
   glow: "#8fe3ff",
+  /** Defensive shielding — a cool protective cyan that brightens with strength. */
+  defense: "#5cf2d6",
+  /** Generic incoming-threat accent (used when a kind has no specific tint). */
+  threat: "#ff6a4d",
 } as const;
+
+/** Per-kind threat tint so a meteor reads differently from a pirate raid. */
+const THREAT_TINTS: Record<string, string> = {
+  pirateRaid: "#ff8a3d",
+  beast: "#ff5db1",
+  meteor: "#ff6a4d",
+  supernova: "#ffd24d",
+};
+
+/** Tint for an incoming threat of a given event kind. */
+export function threatColor(kind: string): string {
+  return THREAT_TINTS[kind] ?? PALETTE.threat;
+}
+
+/**
+ * Map a raw defense value to a 0..1 intensity for shield visuals. Defense has no
+ * hard cap in the contract, so we use a smooth saturating curve: each point adds
+ * less than the last, and a handful of points already reads as "well defended".
+ */
+export function defenseIntensity(defense: number | undefined): number {
+  const d = Math.max(0, defense ?? 0);
+  return 1 - 1 / (1 + d * 0.35);
+}
 
 /** Biome tint for a planet, gated by fog: unscanned planets read as "unknown". */
 export function planetColor(planet: Planet): string {

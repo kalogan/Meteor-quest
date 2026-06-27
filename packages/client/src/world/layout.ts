@@ -1,5 +1,5 @@
 import type { TierId } from "@meteor/shared";
-import type { GameState, Planet, StarSystem } from "@meteor/shared";
+import type { ActiveEvent, GameState, Planet, StarSystem } from "@meteor/shared";
 
 /**
  * Spatial layout + the continuous-zoom scale model. This file is the bridge from
@@ -69,10 +69,35 @@ export function tierForDistance(distance: number): TierId {
   return bestTier;
 }
 
+/** Entity kinds a selection can carry (the galaxy is framed via its center anchor). */
+export type FrameKind = "galaxy" | "system" | "planet" | "continent" | "city";
+
 /** The settle distance the rig uses when framing a given entity kind. */
-export function framingDistance(kind: "system" | "planet" | "continent" | "city"): number {
+export function framingDistance(kind: FrameKind): number {
   const band = ZOOM_BANDS.find((b) => b.tier === kind);
   return band ? band.distance : 8;
+}
+
+/**
+ * The galaxy's center of mass in scene space — the anchor the rig frames when the
+ * player zooms all the way out to the galaxy band. Averaging every system (not just
+ * discovered ones) keeps the framing stable as fog lifts; positions are public
+ * coordinates, the fog only hides what's INSIDE a system, never that it exists.
+ */
+export function galaxyCenter(game: GameState): [number, number, number] {
+  const systems = Object.values(game.systems);
+  if (systems.length === 0) return [0, 0, 0];
+  let x = 0;
+  let y = 0;
+  let z = 0;
+  for (const s of systems) {
+    const [sx, sy, sz] = systemPosition(s);
+    x += sx;
+    y += sy;
+    z += sz;
+  }
+  const n = systems.length;
+  return [x / n, y / n, z / n];
 }
 
 /** Golden-spiral unit-sphere point (mirrors PlanetView's continent/city layout). */
@@ -140,4 +165,46 @@ export function resolveWorldPosition(
     sp[1] + po[1] + surfaceLocal[1],
     sp[2] + po[2] + surfaceLocal[2],
   ];
+}
+
+/**
+ * Resolve an event's target to a world position. Events target a planet OR a
+ * system id; we render the threat at that anchor in galaxy space. Returns null if
+ * the target sits in a system the sim still hides (never telegraph through fog).
+ */
+export function resolveEventPosition(
+  game: GameState,
+  ev: ActiveEvent,
+): [number, number, number] | null {
+  if (game.systems[ev.targetId]) {
+    return resolveWorldPosition(game, ev.targetId, "system");
+  }
+  if (game.planets[ev.targetId]) {
+    return resolveWorldPosition(game, ev.targetId, "planet");
+  }
+  return null;
+}
+
+/**
+ * The system that owns an event's target (the system itself, or the target
+ * planet's parent). Used to decide whether a selected system is "threatened" and
+ * to anchor the galaxy-scale incoming-threat line on the system.
+ */
+export function eventSystemId(game: GameState, ev: ActiveEvent): string | null {
+  if (game.systems[ev.targetId]) return ev.targetId;
+  const planet = game.planets[ev.targetId];
+  return planet ? planet.systemId : null;
+}
+
+/**
+ * Telegraph progress in [0,1]: how far an incoming threat has closed from its
+ * spawn toward resolution, read off the deterministic sim tick. Clamped; falls
+ * back gracefully when `spawnedAtTick` is absent (treats the window as just-opened).
+ */
+export function threatProgress(game: GameState, ev: ActiveEvent): number {
+  const spawned = ev.spawnedAtTick ?? game.tick;
+  const span = ev.resolvesAtTick - spawned;
+  if (span <= 0) return 1;
+  const p = (game.tick - spawned) / span;
+  return p < 0 ? 0 : p > 1 ? 1 : p;
 }
