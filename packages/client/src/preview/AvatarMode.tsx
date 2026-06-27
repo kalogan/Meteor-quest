@@ -6,6 +6,8 @@ import { getContentPack } from "@meteor/shared";
 import { buildTerrainGeometry, hashStr, makeHeightField, mulberry32 } from "../world/surfaceTerrain";
 import { SurfaceAvatar } from "../world/SurfaceAvatar";
 import { surfaceProps, type PlanetSurface } from "../world/planetSurface";
+import { AvatarFx, type FxEmitter } from "../world/AvatarFx";
+import { avatarSfx } from "./avatarSfx";
 import { useAvatarConfig, type AvatarConfig } from "../sim/avatarConfig";
 import { avatarInput, effectiveMove } from "./avatarInput";
 import { AvatarTouchControls } from "./AvatarTouchControls";
@@ -49,6 +51,11 @@ function AvatarScene({ biome, seed, surface, tint, accent }: {
   const heading = useRef(0);
   const camYaw = useRef(0);
   const camPitch = useRef(0.42);
+
+  // Footstep / landing FX + SFX bookkeeping.
+  const fxEmitter = useRef<FxEmitter | null>(null);
+  const wasGrounded = useRef(true);
+  const stepAccum = useRef(0); // metres walked since the last footstep
 
   const heightAt = useMemo(() => makeHeightField(seed, SIZE, 0.9, 1.6), [seed]);
   const ground = useMemo(() => buildTerrainGeometry(heightAt, SIZE, 40), [heightAt]);
@@ -148,7 +155,7 @@ function AvatarScene({ biome, seed, surface, tint, accent }: {
 
     v.y -= grav * dt;
     if (avatarInput.jumpQueued) {
-      if (grounded.current) { v.y = cfg.jumpSpeed; grounded.current = false; }
+      if (grounded.current) { v.y = cfg.jumpSpeed; grounded.current = false; avatarSfx.jump(); }
       avatarInput.jumpQueued = false; // consume (no buffering / double-jump)
     }
 
@@ -157,11 +164,35 @@ function AvatarScene({ biome, seed, surface, tint, accent }: {
     p.z = Math.max(-HALF, Math.min(HALF, p.z + v.z * dt));
     p.y += v.y * dt;
     const gy = heightAt(p.x, p.z);
+    const impactVy = v.y; // downward speed at the moment of contact
     if (p.y <= gy) { p.y = gy; if (v.y < 0) v.y = 0; grounded.current = true; }
     else grounded.current = false;
 
+    // Landing: airborne → grounded transition. Strength scales with the impact speed
+    // (relative to a fast fall), so a small hop puffs less than a long drop.
+    if (grounded.current && !wasGrounded.current) {
+      const strength = Math.max(0.2, Math.min(1.5, -impactVy / 6));
+      avatarSfx.land(strength);
+      fxEmitter.current?.burst(p.x, gy, p.z, strength, "land");
+      stepAccum.current = 0; // don't immediately fire a footstep after touchdown
+    }
+    wasGrounded.current = grounded.current;
+
     const hs = Math.hypot(v.x, v.z);
     speedRef.current = hs;
+
+    // Footsteps: emit dust + a tap every ~1.4 metres while walking on the ground.
+    if (grounded.current && hs > 0.6) {
+      stepAccum.current += hs * dt;
+      if (stepAccum.current >= 1.4) {
+        stepAccum.current = 0;
+        const strength = Math.max(0.25, Math.min(1, hs / cfg.maxSpeed));
+        avatarSfx.step();
+        fxEmitter.current?.burst(p.x, gy, p.z, strength, "step");
+      }
+    } else if (hs <= 0.6) {
+      stepAccum.current = 0;
+    }
     if (hs > 0.3) heading.current = Math.atan2(v.x, v.z);
     if (avatar.current) {
       avatar.current.position.copy(p);
@@ -207,6 +238,9 @@ function AvatarScene({ biome, seed, surface, tint, accent }: {
       <group ref={avatar} scale={AVATAR_SCALE}>
         <SurfaceAvatar speedRef={speedRef} accent={accent} reducedMotion={false} />
       </group>
+
+      {/* Footstep dust + landing puffs (pooled, cosmetic). */}
+      <AvatarFx emitterRef={fxEmitter} tint={tint} />
     </>
   );
 }
@@ -233,7 +267,7 @@ function BtnStyle(active: boolean): React.CSSProperties {
   };
 }
 
-export function AvatarMode() {
+export function AvatarMode({ onReturnToOrbit }: { onReturnToOrbit?: () => void }) {
   const biomes = useMemo(() => getContentPack().biomes, []);
   const [biomeId, setBiomeId] = useState(biomes[0]?.id ?? "rock");
   const biome = biomes.find((b) => b.id === biomeId) ?? biomes[0];
@@ -265,7 +299,19 @@ export function AvatarMode() {
           color: "#e8edf6", font: '500 13px/1.4 system-ui, sans-serif', backdropFilter: "blur(6px)",
         }}
       >
-        <strong style={{ fontSize: 13 }}>Walk a world</strong>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <strong style={{ fontSize: 13 }}>Walk a world</strong>
+          {onReturnToOrbit && (
+            <button
+              data-testid="avatar-return-orbit"
+              aria-label="return to orbit"
+              onClick={onReturnToOrbit}
+              style={{ font: "700 12px/1 system-ui, sans-serif", color: "#fff", background: "#23304d", border: "1px solid #3a4a72", borderRadius: 7, padding: "5px 10px", cursor: "pointer" }}
+            >
+              ↑ Return to orbit
+            </button>
+          )}
+        </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, margin: "8px 0 10px" }}>
           {biomes.map((b) => (
             <button key={b.id} data-testid={`avatar-biome-${b.id}`} onClick={() => setBiomeId(b.id)} style={BtnStyle(b.id === biomeId)}>

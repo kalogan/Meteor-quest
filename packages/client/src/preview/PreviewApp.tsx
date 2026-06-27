@@ -124,7 +124,7 @@ export function PreviewApp() {
         {mode === "tech" && <TechMode tech={tech} />}
         {mode === "props" && <TechPropsGalleryMode frozen={frozen} />}
         {mode === "surface" && <SurfaceMode seed={seed} frozen={frozen} />}
-        {mode === "avatar" && <AvatarMode />}
+        {mode === "avatar" && <AvatarMode onReturnToOrbit={() => setMode("surface")} />}
         {mode === "flight" && <FlightMode seed={seed} frozen={frozen} />}
         {mode === "intro" && <IntroMode seed={seed} />}
       </main>
