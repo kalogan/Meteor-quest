@@ -2,6 +2,26 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Surface roam — Tier 1 (task #44) — done, verified
+- Once landed (surface dive) you can now ROAM across the ground: WASD / arrow keys translate
+  the camera over the surface (CameraRig: cc.forward + cc.truck) with per-frame RE-LEVELING
+  to a fixed eye height so forward motion (which follows the slightly-downward gaze) never
+  sinks underground. Drag / touch still look + zoom natively (CameraControls).
+- `nearSurface` is now HYSTERETIC (enter < r×1.4 of planet centre, exit only > r×5) — roaming
+  horizontally increases centre-distance on the flat tangent arena, so without hysteresis it
+  would pop back to orbit. Dolly out far (or Pull up) still exits cleanly. Roam keys only
+  captured while landed (arrows still steer an in-flight expedition).
+- SurfaceView arena enlarged (radius×14, mesh segs 44) so you roam well inside the rim before
+  the exit threshold lifts you. SurfaceControl shows a 'WASD/arrows to move · drag to look'
+  hint while landed.
+- Verified: gate GREEN; roam smoke — descend → hold W then D → camera translates across the
+  surface (colony left behind into open terrain), stays landed (hysteresis held), hint shown,
+  console CLEAN; before/after screenshots reviewed.
+- FOLLOW-UPS (per SURFACE_DIVE_SCOPE Tier 1.5 / 2): precise TOUCH movement (two-finger pan
+  re-leveling — currently desktop WASD is solid, touch can look/zoom but move is basic);
+  optional polar-angle clamp so orbit-look can't go bird's-eye then snap on move; Tier 2
+  walkable avatar. Roam stays cosmetic view-state (never in the sim) per the scope's rule.
+
 ## Surface dive — land on a planet (tasks #40–43) — done, verified
 - Extends the continuous abstraction-zoom BELOW city tier: keep zooming in on a planet (or
   press the Descend button) → the camera settles into a landed, horizon-facing pose and a
