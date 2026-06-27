@@ -21,6 +21,22 @@ export function previewState(seed = 0): GameState {
   return createInitialState(seed);
 }
 
+/**
+ * A LAUNCH-READY world for the Flight test mode: the resource/tech gates that
+ * normally precede travel (orbital launch, ship range, fuel) are pre-satisfied so
+ * you can fly to any system immediately to test the journey. It mutates a real
+ * `createInitialState` result — same sim, just past the early game — so the journey
+ * sim + the real WorldView render exactly as they do in the shipped product.
+ */
+export function flightTestState(seed = 0): GameState {
+  const s = createInitialState(seed);
+  s.orbitalLaunched = true;
+  s.maxRange = 100_000; // every system reachable
+  s.sensorRange = Math.max(s.sensorRange, 100_000); // reveal systems as targets
+  s.stockpiles.fuel = 1_000;
+  return s;
+}
+
 /** One biome paired with a REAL planet that renders it (for the 3D gallery). */
 export interface BiomeSpecimen {
   biome: Biome;

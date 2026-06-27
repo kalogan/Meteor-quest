@@ -20,6 +20,8 @@ interface SimStore {
   reset: (seed: number) => void;
   /** Start a brand-new game: clear the save and load a fresh world. */
   newGame: (seed: number) => void;
+  /** Inject a specific state (preview/test only — e.g. the Flight test world). */
+  setGame: (game: GameState) => void;
 }
 
 const DEFAULT_SEED = 1;
@@ -38,4 +40,5 @@ export const useSim = create<SimStore>((set) => ({
     clearSave();
     set({ game: createInitialState(seed) });
   },
+  setGame: (game) => set({ game }),
 }));

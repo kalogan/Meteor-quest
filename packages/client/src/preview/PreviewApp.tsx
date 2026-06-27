@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Canvas } from "@react-three/fiber";
+import { TICK_SECONDS } from "@meteor/sim-core";
+import type { GameState } from "@meteor/shared";
 // REUSE the REAL product components — never reimplementations.
 import { WorldView } from "../world/WorldView";
 import { PlanetView } from "../world/PlanetView";
 import { useSim } from "../sim/store";
 import { useSelection } from "../sim/selection";
-import { biomeGallery, listTech } from "./dataSource";
+import { biomeGallery, flightTestState, listTech } from "./dataSource";
 
 /**
  * The preview harness — a backend-free, dual-consumer tool over the REAL product:
@@ -19,12 +21,13 @@ import { biomeGallery, listTech } from "./dataSource";
  * Production-truthful: it mounts the SAME WorldView/PlanetView the game ships and
  * the SAME content pack via the seam (dataSource) — never a fork "for preview".
  */
-type Mode = "world" | "biomes" | "tech";
+type Mode = "world" | "biomes" | "tech" | "flight";
 
 const MODES: { id: Mode; label: string }[] = [
   { id: "world", label: "World" },
   { id: "biomes", label: "Biomes" },
   { id: "tech", label: "Tech" },
+  { id: "flight", label: "Flight" },
 ];
 
 const SURFACE = "#0a0e16";
@@ -41,10 +44,11 @@ export function PreviewApp() {
   const select = useSelection((s) => s.select);
 
   // Reseed the AUTHORITATIVE world through the same path the product uses, so
-  // seed 0 == the on-disk identity world and every seed is reproducible.
+  // seed 0 == the on-disk identity world and every seed is reproducible. Flight mode
+  // installs its OWN launch-ready world, so don't stomp it with a plain reset.
   useEffect(() => {
-    reset(seed);
-  }, [seed, reset]);
+    if (mode !== "flight") reset(seed);
+  }, [seed, reset, mode]);
 
   const tech = useMemo(() => listTech(), []);
 
@@ -108,6 +112,7 @@ export function PreviewApp() {
         {mode === "world" && <WorldMode frozen={frozen} />}
         {mode === "biomes" && <BiomeGalleryMode seed={seed} frozen={frozen} onInspect={select} />}
         {mode === "tech" && <TechMode tech={tech} />}
+        {mode === "flight" && <FlightMode seed={seed} frozen={frozen} />}
       </main>
     </div>
   );
@@ -194,6 +199,128 @@ function TechMode({ tech }: { tech: ReturnType<typeof listTech> }) {
       ))}
     </div>
   );
+}
+
+/**
+ * Flight test mode — fly to a new planet WITHOUT first progressing the economy/tech.
+ * It installs a launch-ready world (`flightTestState`) and drives the REAL sim over
+ * time, mounting the REAL `WorldView`, so the ship + engine trail + camera-follow +
+ * arrow-key steering all play out exactly as in the shipped game (production-truthful
+ * — same components, same `launchJourney` command, no fork). Pick a destination and
+ * watch it fly; steer with ← →.
+ */
+function FlightMode({ seed, frozen }: { seed: number; frozen: boolean }) {
+  const game = useSim((s) => s.game);
+  const setGame = useSim((s) => s.setGame);
+  const dispatch = useSim((s) => s.dispatch);
+
+  // Install / reinstall the launch-ready world on enter + seed change.
+  useEffect(() => {
+    setGame(flightTestState(seed));
+  }, [seed, setGame]);
+
+  // Advance the real sim over wall-clock time (no autosave — preview only).
+  useFlightTicker(frozen);
+
+  const targets = Object.values(game.systems)
+    .filter((s) => s.id !== game.homeSystemId)
+    .sort((a, b) => a.distanceFromHome - b.distanceFromHome);
+  const active = Object.values(game.journeys)[0];
+
+  return (
+    <div style={{ position: "absolute", inset: 0 }}>
+      <Canvas
+        data-testid="flight-canvas"
+        frameloop={frozen ? "demand" : "always"}
+        camera={{ position: [6, 5, 9], fov: 50, near: 0.1, far: 4000 }}
+      >
+        <WorldView />
+      </Canvas>
+
+      <div
+        data-testid="flight-controls"
+        style={{
+          position: "absolute", top: 12, left: 12, width: 264,
+          maxHeight: "calc(100% - 24px)", overflow: "auto",
+          background: "rgba(10,14,22,0.9)", border: BORDER, borderRadius: 8, padding: 12,
+          pointerEvents: "auto",
+        }}
+      >
+        {active ? (
+          <div data-testid="flight-active">
+            <strong>Flying → {systemName(game, active.targetSystemId)}</strong>
+            <div style={{ color: "#aab4c8", fontSize: 13, marginTop: 6 }}>
+              fuel {active.fuel.toFixed(0)} · {active.status}
+            </div>
+            <div style={{ color: "#aab4c8", fontSize: 12, marginTop: 6 }}>
+              Steer with ← → (autopilot still homes in). The camera follows the ship.
+            </div>
+            <button
+              data-testid="flight-abort"
+              onClick={() => dispatch({ type: "abortJourney", journeyId: active.id })}
+              style={{ ...tabStyle(false), marginTop: 10, width: "100%" }}
+            >
+              Abort
+            </button>
+          </div>
+        ) : (
+          <div>
+            <strong>Flight test</strong>
+            <div style={{ color: "#aab4c8", fontSize: 13, margin: "6px 0 10px" }}>
+              Launch-ready world — no resources needed. Pick a destination:
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {targets.map((sys) => (
+                <button
+                  key={sys.id}
+                  data-testid={`flight-launch-${sys.id}`}
+                  onClick={() => dispatch({ type: "launchJourney", targetSystemId: sys.id })}
+                  style={{ ...tabStyle(false), textAlign: "left" }}
+                >
+                  Fly to {sys.name} <span style={{ color: "#aab4c8" }}>· {sys.distanceFromHome.toFixed(0)} ly</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function systemName(game: GameState, id: string): string {
+  return game.systems[id]?.name ?? id;
+}
+
+/** Real-time tick driver for Flight mode (no autosave; preview-only). */
+function useFlightTicker(frozen: boolean) {
+  const last = useRef<number | null>(null);
+  const acc = useRef(0);
+  useEffect(() => {
+    if (frozen) return;
+    let raf = 0;
+    const frame = (now: number) => {
+      raf = requestAnimationFrame(frame);
+      if (last.current === null) {
+        last.current = now;
+        return;
+      }
+      const dt = Math.min(0.25, (now - last.current) / 1000) * 2; // 2× for snappy testing
+      last.current = now;
+      acc.current += dt;
+      let steps = 0;
+      while (acc.current >= TICK_SECONDS && steps < 240) {
+        acc.current -= TICK_SECONDS;
+        steps++;
+      }
+      if (steps > 0) useSim.getState().advance(steps);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(raf);
+      last.current = null;
+    };
+  }, [frozen]);
 }
 
 function tabStyle(active: boolean): React.CSSProperties {
