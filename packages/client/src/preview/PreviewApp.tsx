@@ -9,6 +9,7 @@ import { PROP_COMPONENTS } from "../world/props/registry";
 import { PropTooltip } from "../ui/PropTooltip";
 import { SurfaceControl } from "../ui/SurfaceControl";
 import { SurfaceTuner } from "./SurfaceTuner";
+import { AvatarMode } from "./AvatarMode";
 import { IntroCinematic } from "../ui/intro/IntroCinematic";
 import { useSim } from "../sim/store";
 import { useSelection } from "../sim/selection";
@@ -26,7 +27,7 @@ import { biomeGallery, flightTestState, listBiomes, listTech, listTechProps, pre
  * Production-truthful: it mounts the SAME WorldView/PlanetView the game ships and
  * the SAME content pack via the seam (dataSource) — never a fork "for preview".
  */
-type Mode = "world" | "biomes" | "tech" | "props" | "surface" | "flight" | "intro";
+type Mode = "world" | "biomes" | "tech" | "props" | "surface" | "avatar" | "flight" | "intro";
 
 const MODES: { id: Mode; label: string }[] = [
   { id: "world", label: "World" },
@@ -34,6 +35,7 @@ const MODES: { id: Mode; label: string }[] = [
   { id: "tech", label: "Tech" },
   { id: "props", label: "Tech props" },
   { id: "surface", label: "Surface" },
+  { id: "avatar", label: "Avatar" },
   { id: "flight", label: "Flight" },
   { id: "intro", label: "Intro" },
 ];
@@ -55,7 +57,7 @@ export function PreviewApp() {
   // seed 0 == the on-disk identity world and every seed is reproducible. Flight and
   // Intro modes install their OWN world, so don't stomp it with a plain reset.
   useEffect(() => {
-    if (mode !== "flight" && mode !== "intro" && mode !== "surface") reset(seed);
+    if (mode !== "flight" && mode !== "intro" && mode !== "surface" && mode !== "avatar") reset(seed);
   }, [seed, reset, mode]);
 
   const tech = useMemo(() => listTech(), []);
@@ -122,6 +124,7 @@ export function PreviewApp() {
         {mode === "tech" && <TechMode tech={tech} />}
         {mode === "props" && <TechPropsGalleryMode frozen={frozen} />}
         {mode === "surface" && <SurfaceMode seed={seed} frozen={frozen} />}
+        {mode === "avatar" && <AvatarMode />}
         {mode === "flight" && <FlightMode seed={seed} frozen={frozen} />}
         {mode === "intro" && <IntroMode seed={seed} />}
       </main>
