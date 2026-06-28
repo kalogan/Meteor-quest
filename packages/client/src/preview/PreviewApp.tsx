@@ -9,6 +9,9 @@ import { PROP_COMPONENTS } from "../world/props/registry";
 import { PropTooltip } from "../ui/PropTooltip";
 import { SurfaceControl } from "../ui/SurfaceControl";
 import { JournalPanel } from "../ui/JournalPanel";
+import { JournalButton } from "../ui/JournalButton";
+import { JournalToastHost } from "../ui/JournalToastHost";
+import { useJournalLog } from "../sim/journalLog";
 import { SurfaceTuner } from "./SurfaceTuner";
 import { AvatarMode } from "./AvatarMode";
 import { IntroCinematic } from "../ui/intro/IntroCinematic";
@@ -356,8 +359,8 @@ function JournalMode({ seed, frozen }: { seed: number; frozen: boolean }) {
       "basic_industry", "refining", "power_grid", "fusion", "federal_admin", "planetary_gov",
       "rocketry", "biolabs", "basic_sensors", "deep_sensors",
     ];
-    // Chart a spread of worlds (nearest-out) so the journal has pages: discover their systems,
-    // scan every planet, and colonize the first few non-cradle worlds.
+    // Discover EVERY system, but only chart a spread of ~5 worlds (the rest stay discovered-but-
+    // unscanned so the "Chart a world" demo below has fresh worlds to log). Colonize a couple.
     const systems = Object.values(g.systems).sort((a, b) => a.distanceFromHome - b.distanceFromHome);
     let charted = 0;
     for (const sys of systems) {
@@ -365,14 +368,31 @@ function JournalMode({ seed, frozen }: { seed: number; frozen: boolean }) {
       for (const pid of sys.planetIds) {
         const p = g.planets[pid];
         if (!p) continue;
-        p.scanned = true;
-        if (charted > 0 && charted < 4) p.settled = true; // a few colonies (not the cradle)
-        charted += 1;
+        if (charted < 5) {
+          p.scanned = true;
+          if (charted > 0 && charted < 3) p.settled = true; // a couple of colonies (not the cradle)
+          charted += 1;
+        }
       }
-      if (charted >= 6) break;
     }
     setGame(g);
+    // Installed wholesale (not evolved tick-by-tick) → baseline the journal log silently so the
+    // pre-charted worlds don't all toast on entry.
+    useJournalLog.getState().rebaseline(g);
   }, [seed, setGame]);
+
+  // Demo: chart the next discovered-but-unscanned world → exercises the real
+  // observer → toast + audio path deterministically (matches an in-game sensor reveal).
+  const chartWorld = () => {
+    const g = structuredClone(useSim.getState().game);
+    const target = Object.values(g.planets).find(
+      (p) => !p.scanned && !p.settled && g.systems[p.systemId]?.discovered,
+    );
+    if (!target) return;
+    target.scanned = true;
+    g.tick += 1; // advance the clock so the observer reads it as play, not a reset
+    setGame(g);
+  };
 
   return (
     <div style={{ position: "absolute", inset: 0 }} data-testid="journal-mode">
@@ -383,7 +403,21 @@ function JournalMode({ seed, frozen }: { seed: number; frozen: boolean }) {
       >
         <WorldView />
       </Canvas>
-      <JournalPanel />
+      <div className="hud-overlay" aria-label="Journal preview">
+        <div className="hud-strip">
+          <JournalButton />
+        </div>
+        <JournalPanel />
+        <JournalToastHost />
+      </div>
+      <button
+        type="button"
+        data-testid="journal-chart-demo"
+        onClick={chartWorld}
+        style={{ position: "absolute", bottom: 12, right: 12, ...tabStyle(false), padding: "8px 12px", pointerEvents: "auto" }}
+      >
+        ＋ Chart a world
+      </button>
     </div>
   );
 }

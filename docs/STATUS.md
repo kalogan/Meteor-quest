@@ -2,6 +2,42 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Journal depth + polish — timestamps, detail, open button, toast, audio (tasks #51–53) — done, verified
+- DEPTH:
+  - First-logged TIMESTAMP per world. The sim has no "discovered-at" field, so `sim/journalLog.ts`
+    is a thin CLIENT observer: it watches the authoritative sim and records the tick each world
+    first became logged (scanned/settled/cradle). Persisted per-seed (localStorage); baseline-
+    SILENT on first sight of a world set (a loaded save full of charted worlds doesn't spam),
+    resets on seed-change / clock-rewind (New Game). `startJournalLog()` mounted from main.tsx +
+    preview/main.tsx (like the audio engine). `rebaseline(game)` for the preview's wholesale
+    setGame installs. Each page shows "logged from the start / tick N".
+  - Per-page DETAIL expander: cards collapse to portrait + name + status + a one-line subtitle;
+    an expander (aria-expanded/-controls) reveals the full stat grid + Logged + biome Spiff + a
+    flavour line. The CURRENT (selected) world auto-opens to its page; any page can be toggled.
+  - "New world logged" TOAST (`ui/JournalToast.tsx`, builder): transient aria-live cards (top-
+    center, below the Journal button), auto-dismiss 4s + manual close, reduced-motion aware.
+    Fed by journalLog.recent via `ui/JournalToastHost.tsx` (maps ids → name + biome accent).
+- OPEN BUTTON: `sim/journalUi.ts` (open store) + CollapsiblePanel gains optional CONTROLLED
+  open (`open`/`onOpenChange`, backward-compatible). `ui/JournalButton.tsx` sits in the HUD
+  status strip (top-center desktop, flows in the phone strip) with a count badge + aria-pressed,
+  toggling the panel. Default open desktop / closed phone.
+- AUDIO: `audioEngine` gains a state-derived "logged" cue — `detectSfx` detects a planet going
+  scanned false→true (deduped, baseline-silent) → a soft D5→A5 chime. +4 detectSfx unit tests.
+- Built with TWO parallel builders (JournalToast; audioEngine cue+test) on disjoint files while
+  the Architect owned JournalPanel/Hud/hud.css/journalLog/journalUi integration — no git race.
+- Preview 'Journal' mode gains a "＋ Chart a world" demo button that scans the next discovered
+  world → exercises the REAL observer→toast→audio path. hud.css: journal button styles + count
+  badge; toast nudged to top:54 so it never overlaps the button.
+- Verified: gate GREEN (122 client+sim tests incl. new audio tests); journal2 smoke — 5 pages
+  w/ portraits + "logged" timestamps, current world auto-expands, expander toggles a non-current
+  page (false→true, detail stats appear), the strip button opens/closes the panel (aria-pressed
+  + visibility), "Chart a world" → a toast appears + entry count grows + dismiss works, **axe 0
+  violations**, console CLEAN; screenshot reviewed (toast clears the button, detail grids + flavour
+  + spiff read clearly).
+- TASTE/FOLLOW-UP: in-game journal dock (left:312, 70vh) can still crowd TechPanel/Tactical on
+  narrow desktops — now mitigated by the open/close button. Timestamp uses sim ticks (not wall
+  clock) by design.
+
 ## Travel Journal — logbook of visited worlds (task #50) — done, verified
 - A HUD JournalPanel (`ui/JournalPanel.tsx`) documents every world you've been to: the cradle
   plus every planet SCANNED or SETTLED. Each page = a rendered PORTRAIT of the world (the REAL

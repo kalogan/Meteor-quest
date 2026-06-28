@@ -4,7 +4,12 @@ import { PreviewApp } from "./PreviewApp";
 import { useSim } from "../sim/store";
 import { useSelection } from "../sim/selection";
 import { usePropHover } from "../sim/propHover";
+import { startJournalLog } from "../sim/journalLog";
 import "../index.css";
+
+// Journal mode mounts the real JournalPanel/toast; start the observer so timestamps + toasts
+// work in the harness exactly as in the game.
+startJournalLog();
 
 // [harness] The preview is the agent runtime-smoke surface (see PREVIEW_HARNESS): expose the
 // REAL stores so a headless smoke can install a specific GameState (a mid-game world with

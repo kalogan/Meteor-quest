@@ -138,6 +138,40 @@
    variable-length world list from colliding with the bottom cluster). Joins the phone
    drawer accordion on small viewports. */
 .hud-dock-journal { bottom: 12px; left: 312px; max-height: 70vh; }
+
+/* Journal open/close button — docked top-center on desktop (clear of resources top-left and
+   speed top-right); flows in the status strip on phones. */
+.hud-panel--journal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--hud-panel-bg);
+  color: var(--hud-text);
+  border: 1px solid var(--hud-panel-border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font: 600 13px/1 system-ui, sans-serif;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.hud-panel--journal-btn[aria-pressed="true"] {
+  border-color: #3f6bd0;
+  background: rgba(43, 108, 255, 0.18);
+}
+.hud-journal-count {
+  min-width: 18px;
+  text-align: center;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--hud-accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
 .hud-dock-bc {
   bottom: 12px;
   left: 50%;

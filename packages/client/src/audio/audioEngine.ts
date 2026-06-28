@@ -33,7 +33,7 @@ function getAudioContextCtor(): AudioContextCtor | null {
 }
 
 // ── SFX catalogue ──────────────────────────────────────────────────────────────
-export type SfxName = "launch" | "arrival" | "threat" | "settle" | "uiClick";
+export type SfxName = "launch" | "arrival" | "threat" | "settle" | "uiClick" | "logged";
 
 /** Tunable mix/feel knobs — Director taste lives here. */
 const MUSIC = {
@@ -222,6 +222,10 @@ export function startAudioEngine(): () => void {
         case "settle":
           chime(e, [330, 440, 550], 0.9, "triangle");
           break;
+        case "logged":
+          // A soft "page/stamp" pair (D5→A5) for charting a new world in the Journal.
+          chime(e, [587, 880], 0.5);
+          break;
         case "uiClick":
           blip(e, { from: 900, to: 900, dur: 0.045, type: "square", peak: 0.5 });
           break;
@@ -372,6 +376,8 @@ let live: { dispose: () => void } | null = null;
  *             (removal also covers stranded/recalled, which are NOT arrivals).
  *   threat  — a NEW event id appeared in `events`.
  *   settle  — a new log line containing "Settled" appeared.
+ *   logged  — a planet became `scanned` that wasn't before (charted into the Journal);
+ *             deduped to one cue even if several worlds were scanned in the same tick.
  */
 export function detectSfx(next: GameState, prev: GameState | undefined): SfxName[] {
   const cues: SfxName[] = [];
@@ -396,6 +402,17 @@ export function detectSfx(next: GameState, prev: GameState | undefined): SfxName
 
   // settle: a new log line containing "Settled".
   if (newLogMatches(next, prev, /Settled/)) cues.push("settle");
+
+  // logged: a planet became `scanned` that wasn't before (charted into the Journal).
+  // Deduped: at most one "logged" per tick no matter how many worlds were scanned.
+  const prevPlanets = prev.planets ?? {};
+  const nextPlanets = next.planets ?? {};
+  for (const id of Object.keys(nextPlanets)) {
+    if (nextPlanets[id]?.scanned === true && prevPlanets[id]?.scanned !== true) {
+      cues.push("logged");
+      break;
+    }
+  }
 
   return cues;
 }

@@ -22,16 +22,28 @@ export function CollapsiblePanel({
   title,
   children,
   defaultOpen = true,
+  open: controlledOpen,
+  onOpenChange,
   className,
   style,
 }: {
   title: ReactNode;
   children: ReactNode;
   defaultOpen?: boolean;
+  /** Controlled open state. When provided, the panel is driven by the caller (e.g. a HUD
+   *  button via a store) and internal toggle state is ignored. Omit for uncontrolled. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   className?: string;
   style?: CSSProperties;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(defaultOpen);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const toggle = () => {
+    const next = !open;
+    if (controlledOpen === undefined) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
   const headerId = useId();
   const regionId = useId();
 
@@ -48,7 +60,7 @@ export function CollapsiblePanel({
         className="hud-collapsible__header"
         aria-expanded={open}
         aria-controls={regionId}
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
       >
         <span className="hud-collapsible__title">{title}</span>
         <span className="hud-collapsible__chevron" aria-hidden="true">

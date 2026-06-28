@@ -1,5 +1,7 @@
 import { DefensePanel } from "./DefensePanel";
+import { JournalButton } from "./JournalButton";
 import { JournalPanel } from "./JournalPanel";
+import { JournalToastHost } from "./JournalToastHost";
 import { JourneyPanel } from "./JourneyPanel";
 import { ObjectivesPanel } from "./ObjectivesPanel";
 import { ResourceHud } from "./ResourceHud";
@@ -18,10 +20,11 @@ import "./hud.css";
  *     top-left, TechPanel beside it, SpeedControls top-right, TierControlPanel below
  *     it, JourneyPanel below that, DefensePanel bottom-right, TacticalPanel
  *     bottom-center.
- *   Phone (<= 720px): docking is dropped. A top STATUS STRIP holds resources + speed
- *     (always visible, non-overlapping), and a bottom DRAWER stacks the heavy panels
- *     (research / command / expedition / defense) as an accordion — each collapses so
- *     the canvas stays visible. Threat alerts sit just above the drawer.
+ *   Phone (<= 720px): docking is dropped. A top STATUS STRIP holds resources + a
+ *     Journal button + speed (always visible, non-overlapping), and a bottom DRAWER
+ *     stacks the heavy panels (research / command / expedition / journal / defense) as
+ *     an accordion — each collapses so the canvas stays visible. Threat alerts sit just
+ *     above the drawer.
  *
  * The container is a `complementary` landmark with `pointer-events:none` so the
  * God-view receives clicks; each panel re-enables pointer-events on itself. Heavy
@@ -39,6 +42,7 @@ export function Hud() {
       {/* Top status strip (phone) / docked corners (desktop). */}
       <div className="hud-strip">
         <ResourceHud />
+        <JournalButton />
         <SpeedControls />
       </div>
 
@@ -54,6 +58,9 @@ export function Hud() {
 
       {/* Threat alerts — always surfaced, never collapsed. */}
       <TacticalPanel />
+
+      {/* Transient "new world logged" notifications. */}
+      <JournalToastHost />
     </aside>
   );
 }
