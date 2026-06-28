@@ -19,9 +19,11 @@ export function SurfaceControl() {
       style={{
         position: "fixed",
         left: "50%",
-        bottom: "max(18px, env(safe-area-inset-bottom))",
+        // Sit ABOVE the HUD action bar (phone bottom bar / desktop pill) so the button isn't
+        // hidden behind it. --hud-nav-h is the phone bar height; the extra clears the desktop pill.
+        bottom: "calc(var(--hud-nav-h, 58px) + 24px + env(safe-area-inset-bottom, 0px))",
         transform: "translateX(-50%)",
-        zIndex: 40,
+        zIndex: 46,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
