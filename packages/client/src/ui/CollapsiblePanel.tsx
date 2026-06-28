@@ -73,15 +73,17 @@ export function CollapsiblePanel({
     return () => unregister(mobileId);
   }, [mobileId, mobileLabel, mobileIcon, mobileOrder, register, unregister]);
 
-  const sheet = isPhone && mobileId !== undefined;
-  const sheetOpen = sheet && navActive === mobileId;
-  // In sheet mode the panel is open whenever it's the active sheet; otherwise honor the
-  // controlled/uncontrolled open state (desktop + the journal's desktop button).
-  const open = sheet ? sheetOpen : (controlledOpen ?? uncontrolledOpen);
+  // Nav-controlled panels (those with a mobileId) open ONE AT A TIME from the action bar on
+  // BOTH breakpoints — a bottom SHEET on phones, a docked panel on desktop — instead of all
+  // corner-docking at once (which overlapped on wide-but-short / busy screens). They render
+  // only while active; otherwise they return null (still mounted → still registered in the nav).
+  const navControlled = mobileId !== undefined;
+  const navActive_ = navActive === mobileId;
+  const open = navControlled ? true : (controlledOpen ?? uncontrolledOpen);
 
   const toggle = () => {
-    if (sheet) {
-      setNavActive(null); // the sheet header is its close control
+    if (navControlled) {
+      setNavActive(null); // the header doubles as the close control
       return;
     }
     const next = !open;
@@ -89,12 +91,13 @@ export function CollapsiblePanel({
     onOpenChange?.(next);
   };
 
+  if (navControlled && !navActive_) return null;
+
   const classes = [
     "hud-panel",
     "hud-collapsible",
     className,
-    sheet ? "hud-collapsible--sheet" : null,
-    sheet ? (sheetOpen ? "is-open" : "is-collapsed") : null,
+    navControlled ? (isPhone ? "hud-collapsible--sheet" : "hud-collapsible--dock") : null,
   ]
     .filter(Boolean)
     .join(" ");
@@ -112,12 +115,12 @@ export function CollapsiblePanel({
         className="hud-collapsible__header"
         aria-expanded={open}
         aria-controls={regionId}
-        aria-label={sheet ? `Close ${mobileLabel ?? mobileId}` : undefined}
+        aria-label={navControlled ? `Close ${mobileLabel ?? mobileId}` : undefined}
         onClick={toggle}
       >
         <span className="hud-collapsible__title">{title}</span>
         <span className="hud-collapsible__chevron" aria-hidden="true">
-          {sheet ? "✕" : "▶"}
+          {navControlled ? "✕" : "▶"}
         </span>
       </button>
       <div id={regionId} className="hud-collapsible__region" hidden={!open}>

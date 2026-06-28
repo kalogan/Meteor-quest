@@ -139,40 +139,6 @@
    variable-length world list from colliding with the bottom cluster). Joins the phone
    drawer accordion on small viewports. */
 .hud-dock-journal { bottom: 12px; left: 312px; max-height: 70vh; }
-
-/* Journal open/close button — docked top-center on desktop (clear of resources top-left and
-   speed top-right); flows in the status strip on phones. */
-.hud-panel--journal-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--hud-panel-bg);
-  color: var(--hud-text);
-  border: 1px solid var(--hud-panel-border);
-  border-radius: 8px;
-  padding: 6px 10px;
-  font: 600 13px/1 system-ui, sans-serif;
-  cursor: pointer;
-  backdrop-filter: blur(4px);
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-}
-.hud-panel--journal-btn[aria-pressed="true"] {
-  border-color: #3f6bd0;
-  background: rgba(43, 108, 255, 0.18);
-}
-.hud-journal-count {
-  min-width: 18px;
-  text-align: center;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: var(--hud-accent);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-}
 .hud-dock-bc {
   bottom: 12px;
   left: 50%;
@@ -208,11 +174,6 @@
     flex: 1 1 auto;
     min-width: 0;
   }
-  /* The speed control shrinks to its content rather than stretching. */
-  .hud-strip > .hud-panel--speed {
-    flex: 0 0 auto;
-  }
-
   /* Compact resource CHIP BAR (phone): one thin row instead of the full card, so the
      game keeps the screen. */
   .hud-resbar {
@@ -231,17 +192,10 @@
   .hud-reschip { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
   .hud-reschip__abbr { color: var(--hud-muted); font-weight: 600; }
 
-  /* Trim the speed control: drop the "speed" word, tighten padding. */
-  .hud-speed-label { display: none; }
-  .hud-panel--speed { padding: 4px 6px !important; gap: 4px !important; }
-
   /* The heavy panels no longer stack in an accordion — each opens as a bottom SHEET selected
      from the icon nav bar (see .hud-collapsible--sheet below). The drawer wrapper stays
      layout-neutral (display:contents) so its children position themselves. */
   .hud-drawer { display: contents; }
-
-  /* The top-strip Journal button is redundant on phone — the journal is a bottom-nav item. */
-  .hud-panel--journal-btn { display: none !important; }
 
   /* Tactical alerts sit at the top (below the status strip), clear of the bottom sheet + nav. */
   .hud-dock-bc {
@@ -279,7 +233,6 @@
     z-index: 40;
     animation: hud-sheet-up 0.18s ease;
   }
-  .hud-collapsible--sheet.is-collapsed { display: none !important; }
   /* A grab-handle hint at the top of every sheet. */
   .hud-collapsible--sheet::before {
     content: "";
@@ -346,10 +299,66 @@
   }
 }
 
-/* The icon nav bar is phone-only; corner docks replace it on desktop. (min-width query so it
-   is independent of source order vs the phone rule above.) */
+/* ---- Desktop (>720px): the SAME action bar, as a centered bottom pill; panels dock one at a
+   time on the right instead of corner-docking and overlapping. (min-width query so these rules
+   are independent of source order vs the phone block above.) ---- */
 @media (min-width: 721px) {
-  .hud-mobile-nav { display: none; }
+  .hud-mobile-nav {
+    display: flex;
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    gap: 4px;
+    padding: 6px;
+    background: rgba(8, 11, 18, 0.92);
+    border: 1px solid var(--hud-panel-border);
+    border-radius: 14px;
+    backdrop-filter: blur(8px);
+    pointer-events: auto;
+    z-index: 45;
+  }
+  .hud-mobile-nav__btn {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 9px;
+    background: none;
+    color: var(--hud-muted);
+    cursor: pointer;
+    font: 700 13px/1 system-ui, sans-serif;
+  }
+  .hud-mobile-nav__btn:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+  .hud-mobile-nav__btn[aria-pressed="true"] { color: #fff; background: rgba(43, 108, 255, 0.28); }
+  .hud-mobile-nav__icon { font-size: 16px; }
+
+  /* Active panel docks on the RIGHT (resources own the top-left), above the action bar — one at
+     a time, tall, never overlapping. */
+  .hud-collapsible--dock {
+    position: fixed !important;
+    right: 16px !important;
+    left: auto !important;
+    top: auto !important;
+    bottom: 84px !important;
+    transform: none !important;
+    margin: 0 !important;
+    max-height: calc(100vh - 110px) !important;
+    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    z-index: 40;
+  }
+  .hud-collapsible--dock .hud-collapsible__region { flex: 1; overflow-y: auto; }
+  .hud-collapsible--dock .hud-scroll { max-height: none !important; }
+
+  /* Threats move to top-center so they're clear of the bottom action bar. */
+  .hud-dock-bc { top: 12px; bottom: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {

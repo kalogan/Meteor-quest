@@ -9,10 +9,11 @@ import { PROP_COMPONENTS } from "../world/props/registry";
 import { PropTooltip } from "../ui/PropTooltip";
 import { SurfaceControl } from "../ui/SurfaceControl";
 import { JournalPanel } from "../ui/JournalPanel";
-import { JournalButton } from "../ui/JournalButton";
 import { JournalToastHost } from "../ui/JournalToastHost";
+import { MobileNav } from "../ui/MobileNav";
 import { Hud } from "../ui/Hud";
 import { useJournalLog } from "../sim/journalLog";
+import { useMobileNav } from "../sim/mobileNav";
 import { SurfaceTuner } from "./SurfaceTuner";
 import { AvatarMode } from "./AvatarMode";
 import { IntroCinematic } from "../ui/intro/IntroCinematic";
@@ -382,6 +383,8 @@ function JournalMode({ seed, frozen }: { seed: number; frozen: boolean }) {
     // Installed wholesale (not evolved tick-by-tick) → baseline the journal log silently so the
     // pre-charted worlds don't all toast on entry.
     useJournalLog.getState().rebaseline(g);
+    // The journal panel is nav-controlled now — open it so this mode shows the logbook.
+    useMobileNav.getState().setActive("journal");
   }, [seed, setGame]);
 
   // Demo: chart the next discovered-but-unscanned world → exercises the real
@@ -407,10 +410,8 @@ function JournalMode({ seed, frozen }: { seed: number; frozen: boolean }) {
         <WorldView />
       </Canvas>
       <div className="hud-overlay" aria-label="Journal preview">
-        <div className="hud-strip">
-          <JournalButton />
-        </div>
         <JournalPanel />
+        <MobileNav />
         <JournalToastHost />
       </div>
       <button

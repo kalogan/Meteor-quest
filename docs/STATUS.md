@@ -2,6 +2,34 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Unified action bar (desktop + mobile) + Settings panel (tasks #56–57) — done, verified
+- UNIFIED the HUD on ALL breakpoints around ONE action bar. The heavy panels (Goals/Research/
+  Command/Travel/Journal/Defense/Settings) open ONE AT A TIME from the bar — a bottom SHEET on
+  phones, a docked panel on desktop — instead of corner-docking simultaneously (which OVERLAPPED
+  badly on wide-but-short / busy screens; see the user's landscape screenshot). Resources stay
+  always-on (top-left card desktop / chip bar phone); threats move to top-center on desktop.
+- CollapsiblePanel: nav-controlled panels (those with a mobileId) now render only while active
+  (else return null — still mounted → still registered), with `hud-collapsible--sheet` on phone
+  / `hud-collapsible--dock` (fixed bottom-right, tall, single scroll) on desktop. The header is
+  the close (✕). `MobileNav` shows on desktop too as a centered bottom PILL (icon+label buttons).
+- SETTINGS panel (new `ui/SettingsHud.tsx`, built by a parallel builder): a nav item (⚙️) holding
+  live game SPEED (pause/1×/2×/3×) + AUDIO/motion (reduced-motion select, master/music/sfx volume,
+  mute) — the standalone top-right SpeedControls is gone (folded in here, per request). Reuses
+  `applyReducedMotion` + `useSettings`; fully labelled/aria.
+- CLEANUP: deleted the now-orphaned `SpeedControls.tsx`, `JournalButton.tsx`, `sim/journalUi.ts`
+  (journal is a nav item on both breakpoints now; JournalPanel dropped the journalUi controlled-
+  open) + their dead CSS. Preview 'HUD' mode mounts the real Hud (resize to test both layouts);
+  'Journal' mode opens the nav-controlled journal via `setActive`.
+- Verified: gate GREEN; unified smoke — DESKTOP @1280: centered action-bar pill (6 icons incl.
+  Settings), nothing open at rest (game clear), Research opens ONE dock on the right, Settings
+  replaces it (one-at-a-time), Settings speed buttons drive the sim (timeScale 0 & 2), volume
+  sliders present, header ✕ closes, resource card still top-left, **axe 0**, console CLEAN;
+  PHONE @390: Settings opens as a sheet with speed + volume, console CLEAN. Screenshots reviewed
+  (desktop: resources top-left + right-docked Settings + bottom pill, no overlap, planet fills
+  center; phone: chip bar + settings sheet + bottom bar).
+- FOLLOW-UP: desktop default is no panel open (clean game view) — if players want a panel pinned,
+  a "keep open"/multi-pin affordance could come later. Tactical/threats top-center desktop is new.
+
 ## Mobile HUD redesign — bottom icon nav + bottom sheet (task #54) — done, verified
 - Replaced the phone ACCORDION DRAWER (which stacked every heavy panel and ate the screen) with
   a BOTTOM ICON NAV BAR + a single bottom SHEET. Tapping an icon slides that one panel up into

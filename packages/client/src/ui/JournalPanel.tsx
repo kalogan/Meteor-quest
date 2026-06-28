@@ -1,7 +1,6 @@
 import { useId, useMemo, useState } from "react";
 import { useSim } from "../sim/store";
 import { useSelection } from "../sim/selection";
-import { useJournalUi } from "../sim/journalUi";
 import { useJournalLog } from "../sim/journalLog";
 import { journalEntries, journalSummary, type JournalEntry, type JournalStatus } from "../sim/journal";
 import { CollapsiblePanel } from "./CollapsiblePanel";
@@ -19,8 +18,7 @@ import { MUTED_TEXT, subtle } from "./theme";
  * Read-only over sim state (selection + open state are cosmetic). Accessible (each page a real
  * button with a spoken summary; the expander carries aria-expanded/-controls), responsive
  * (joins the phone drawer), reduced-motion aware. Portraits are lazy-mounted (WebGL context
- * budget) by JournalThumbnail. Open/closed is driven by `useJournalUi` so the HUD strip button
- * can toggle it.
+ * budget) by JournalThumbnail. Open/closed is driven by the unified action bar (mobileId).
  */
 
 function prefersReducedMotion(): boolean {
@@ -167,8 +165,6 @@ export function JournalPanel() {
   const select = useSelection((s) => s.select);
   const selectedId = useSelection((s) => s.selectedId);
   const selectedKind = useSelection((s) => s.selectedKind);
-  const open = useJournalUi((s) => s.open);
-  const setOpen = useJournalUi((s) => s.setOpen);
   const firstTick = useJournalLog((s) => s.firstTick);
   const reducedMotion = prefersReducedMotion();
 
@@ -179,8 +175,6 @@ export function JournalPanel() {
   return (
     <CollapsiblePanel
       title={`Journal (${summary.worldsLogged})`}
-      open={open}
-      onOpenChange={setOpen}
       className="hud-dock hud-dock-journal"
       mobileId="journal"
       mobileLabel="Journal"
