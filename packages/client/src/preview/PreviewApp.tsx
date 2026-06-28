@@ -11,6 +11,7 @@ import { SurfaceControl } from "../ui/SurfaceControl";
 import { JournalPanel } from "../ui/JournalPanel";
 import { JournalButton } from "../ui/JournalButton";
 import { JournalToastHost } from "../ui/JournalToastHost";
+import { Hud } from "../ui/Hud";
 import { useJournalLog } from "../sim/journalLog";
 import { SurfaceTuner } from "./SurfaceTuner";
 import { AvatarMode } from "./AvatarMode";
@@ -35,7 +36,7 @@ import "../ui/hud.css";
  * Production-truthful: it mounts the SAME WorldView/PlanetView the game ships and
  * the SAME content pack via the seam (dataSource) — never a fork "for preview".
  */
-type Mode = "world" | "biomes" | "tech" | "props" | "surface" | "avatar" | "journal" | "flight" | "intro";
+type Mode = "world" | "biomes" | "tech" | "props" | "surface" | "avatar" | "journal" | "hud" | "flight" | "intro";
 
 const MODES: { id: Mode; label: string }[] = [
   { id: "world", label: "World" },
@@ -45,6 +46,7 @@ const MODES: { id: Mode; label: string }[] = [
   { id: "surface", label: "Surface" },
   { id: "avatar", label: "Avatar" },
   { id: "journal", label: "Journal" },
+  { id: "hud", label: "HUD" },
   { id: "flight", label: "Flight" },
   { id: "intro", label: "Intro" },
 ];
@@ -66,7 +68,7 @@ export function PreviewApp() {
   // seed 0 == the on-disk identity world and every seed is reproducible. Flight and
   // Intro modes install their OWN world, so don't stomp it with a plain reset.
   useEffect(() => {
-    if (mode !== "flight" && mode !== "intro" && mode !== "surface" && mode !== "avatar" && mode !== "journal") reset(seed);
+    if (mode !== "flight" && mode !== "intro" && mode !== "surface" && mode !== "avatar" && mode !== "journal" && mode !== "hud") reset(seed);
   }, [seed, reset, mode]);
 
   const tech = useMemo(() => listTech(), []);
@@ -135,6 +137,7 @@ export function PreviewApp() {
         {mode === "surface" && <SurfaceMode seed={seed} frozen={frozen} />}
         {mode === "avatar" && <AvatarMode onReturnToOrbit={() => setMode("surface")} />}
         {mode === "journal" && <JournalMode seed={seed} frozen={frozen} />}
+        {mode === "hud" && <HudMode seed={seed} frozen={frozen} />}
         {mode === "flight" && <FlightMode seed={seed} frozen={frozen} />}
         {mode === "intro" && <IntroMode seed={seed} />}
       </main>
@@ -418,6 +421,54 @@ function JournalMode({ seed, frozen }: { seed: number; frozen: boolean }) {
       >
         ＋ Chart a world
       </button>
+    </div>
+  );
+}
+
+/**
+ * HUD mode — mounts the REAL in-game Hud over a mid-game world so the full overlay (and the
+ * phone bottom-sheet nav) can be eyeballed + smoke-tested at any viewport. Installs a launched,
+ * tech-rich, partly-charted world so several panels are available (Goals/Research/Command/
+ * Journal always; Travel/Defense once relevant), then mounts the SAME WorldView + Hud the game
+ * ships (production-truthful — no fork). Resize the window to ≤720px to see the mobile layout.
+ */
+function HudMode({ seed, frozen }: { seed: number; frozen: boolean }) {
+  const setGame = useSim((s) => s.setGame);
+
+  useEffect(() => {
+    const g = previewState(seed);
+    g.research.unlocked = [
+      "basic_industry", "refining", "power_grid", "fusion", "federal_admin", "planetary_gov",
+      "rocketry", "biolabs", "basic_sensors", "deep_sensors",
+    ];
+    g.orbitalLaunched = true; // unlock the expedition + defense panels' availability checks
+    // Discover systems + chart a few worlds so the Journal + Travel panels have content.
+    const systems = Object.values(g.systems).sort((a, b) => a.distanceFromHome - b.distanceFromHome);
+    let charted = 0;
+    for (const sys of systems) {
+      sys.discovered = true;
+      for (const pid of sys.planetIds) {
+        const p = g.planets[pid];
+        if (!p || charted >= 4) continue;
+        p.scanned = true;
+        if (charted > 0 && charted < 3) p.settled = true;
+        charted += 1;
+      }
+    }
+    setGame(g);
+    useJournalLog.getState().rebaseline(g);
+  }, [seed, setGame]);
+
+  return (
+    <div style={{ position: "absolute", inset: 0 }} data-testid="hud-mode">
+      <Canvas
+        data-testid="hud-canvas"
+        frameloop={frozen ? "demand" : "always"}
+        camera={{ position: [6, 5, 9], fov: 50, near: 0.1, far: 2000 }}
+      >
+        <WorldView />
+      </Canvas>
+      <Hud />
     </div>
   );
 }

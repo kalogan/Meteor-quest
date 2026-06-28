@@ -23,6 +23,7 @@
   --hud-muted: #aab4c8; /* was opacity 0.6 (~#9197a3): now ~7:1 on panel bg */
   --hud-focus: #8fb4ff;
   --hud-accent: #2b6cff;
+  --hud-nav-h: 58px; /* phone bottom icon-nav height (sheets sit above it) */
 }
 
 /* ---- Overlay container ---- */
@@ -212,30 +213,15 @@
     flex: 0 0 auto;
   }
 
-  /* The heavy panels become a single bottom drawer (accordion column). */
-  .hud-drawer {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    position: absolute;
-    left: 8px;
-    right: 8px;
-    bottom: 8px;
-    max-height: 56vh;
-    overflow-y: auto;
-  }
-  .hud-drawer > .hud-panel {
-    /* !important + inset:auto beat the inline `position:absolute` from theme.panel,
-       so the heavy panels stack in the bottom drawer instead of floating off-screen. */
-    position: static !important;
-    inset: auto !important;
-    width: auto !important;
-    max-width: none !important;
-    transform: none !important;
-    margin: 0 !important;
-  }
+  /* The heavy panels no longer stack in an accordion — each opens as a bottom SHEET selected
+     from the icon nav bar (see .hud-collapsible--sheet below). The drawer wrapper stays
+     layout-neutral (display:contents) so its children position themselves. */
+  .hud-drawer { display: contents; }
 
-  /* Tactical alerts sit just above the drawer so both stay reachable. */
+  /* The top-strip Journal button is redundant on phone — the journal is a bottom-nav item. */
+  .hud-panel--journal-btn { display: none !important; }
+
+  /* Tactical alerts sit at the top (below the status strip), clear of the bottom sheet + nav. */
   .hud-dock-bc {
     position: absolute;
     left: 8px;
@@ -243,7 +229,7 @@
     bottom: auto;
     top: 96px;
     transform: none;
-    max-height: 40vh;
+    max-height: 36vh;
     overflow-y: auto;
   }
   .hud-dock-bc > .hud-panel {
@@ -251,10 +237,101 @@
     width: auto;
   }
 
-  /* Cap inner scroll regions so a panel never eats the whole screen. */
-  .hud-scroll {
+  /* ---- Bottom SHEET: the selected heavy panel, lower third, game visible above ---- */
+  .hud-collapsible--sheet {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    bottom: calc(var(--hud-nav-h) + env(safe-area-inset-bottom, 0px)) !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    height: 36vh;
     max-height: 36vh !important;
+    display: flex;
+    flex-direction: column;
+    border-radius: 14px 14px 0 0;
+    border-bottom: none;
+    z-index: 40;
+    animation: hud-sheet-up 0.18s ease;
   }
+  .hud-collapsible--sheet.is-collapsed { display: none !important; }
+  /* A grab-handle hint at the top of every sheet. */
+  .hud-collapsible--sheet::before {
+    content: "";
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: #3a4668;
+  }
+  .hud-collapsible--sheet .hud-collapsible__region { flex: 1; overflow-y: auto; }
+  /* The sheet itself scrolls — release inner scroll caps so there's a single scroll context. */
+  .hud-collapsible--sheet .hud-scroll { max-height: none !important; }
+
+  @keyframes hud-sheet-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  /* ---- Bottom icon NAV bar ---- */
+  .hud-mobile-nav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 45;
+    pointer-events: auto;
+    gap: 2px;
+    padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px));
+    background: rgba(8, 11, 18, 0.96);
+    border-top: 1px solid var(--hud-panel-border);
+    backdrop-filter: blur(6px);
+  }
+  .hud-mobile-nav__btn {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 4px 2px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    color: var(--hud-muted);
+    cursor: pointer;
+  }
+  .hud-mobile-nav__btn[aria-pressed="true"] {
+    color: #fff;
+    background: rgba(43, 108, 255, 0.22);
+  }
+  .hud-mobile-nav__icon { font-size: 19px; line-height: 1; }
+  .hud-mobile-nav__label {
+    font: 700 10px/1 system-ui, sans-serif;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
+
+/* The icon nav bar is phone-only; corner docks replace it on desktop. (min-width query so it
+   is independent of source order vs the phone rule above.) */
+@media (min-width: 721px) {
+  .hud-mobile-nav { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-collapsible--sheet { animation: none !important; }
 }
 
 /* ---- Touch targets: >=44x44 on coarse pointers ---- */

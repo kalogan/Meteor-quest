@@ -339,6 +339,10 @@ export function TierControlPanel() {
       title={`Command · ${authorityTier}`}
       defaultOpen={!isPhoneViewport()}
       className="hud-dock hud-dock-tier"
+      mobileId="command"
+      mobileLabel="Command"
+      mobileIcon="🛰️"
+      mobileOrder={3}
       style={{ width: 280 }}
     >
       {body}

@@ -38,6 +38,10 @@ export function TechPanel() {
       title="Research"
       defaultOpen={!isPhoneViewport()}
       className="hud-dock hud-dock-tech"
+      mobileId="research"
+      mobileLabel="Research"
+      mobileIcon="🔬"
+      mobileOrder={2}
       style={{ width: 280, maxHeight: "calc(100vh - 24px)", overflowY: "auto" }}
     >
       {current ? (

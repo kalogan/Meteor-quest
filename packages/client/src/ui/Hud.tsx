@@ -3,6 +3,7 @@ import { JournalButton } from "./JournalButton";
 import { JournalPanel } from "./JournalPanel";
 import { JournalToastHost } from "./JournalToastHost";
 import { JourneyPanel } from "./JourneyPanel";
+import { MobileNav } from "./MobileNav";
 import { ObjectivesPanel } from "./ObjectivesPanel";
 import { ResourceHud } from "./ResourceHud";
 import { SpeedControls } from "./SpeedControls";
@@ -58,6 +59,9 @@ export function Hud() {
 
       {/* Threat alerts — always surfaced, never collapsed. */}
       <TacticalPanel />
+
+      {/* Phone bottom icon bar — picks which heavy panel slides up as a sheet. Hidden on desktop. */}
+      <MobileNav />
 
       {/* Transient "new world logged" notifications. */}
       <JournalToastHost />

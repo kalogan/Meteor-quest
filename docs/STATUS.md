@@ -2,6 +2,44 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## Mobile HUD redesign — bottom icon nav + bottom sheet (task #54) — done, verified
+- Replaced the phone ACCORDION DRAWER (which stacked every heavy panel and ate the screen) with
+  a BOTTOM ICON NAV BAR + a single bottom SHEET. Tapping an icon slides that one panel up into
+  the lower ~36vh (grab-handle + ✕ close header); the game stays visible above. One panel at a
+  time; tap the active icon (or the sheet header) to close. Desktop is UNCHANGED (corner docks).
+- `sim/mobileNav.ts`: store with `active` + a panel REGISTRY. Panels SELF-REGISTER while mounted
+  (a panel that conditionally renders nothing — e.g. Expedition before launch — simply isn't
+  registered, so its icon doesn't appear), so the nav stays in lock-step with what's on screen
+  WITHOUT duplicating each panel's visibility rules. `unregister` closes the sheet if the active
+  panel went away.
+- `ui/CollapsiblePanel.tsx`: gained `mobileId`/`mobileLabel`/`mobileIcon`/`mobileOrder`. On a
+  phone (reactive `useIsPhone` matchMedia hook) a panel with a mobileId registers + renders as a
+  SHEET — visible only when it's the nav's active panel (`.hud-collapsible--sheet.is-open`,
+  else `.is-collapsed` display:none so it stays mounted/registered); open is forced while active;
+  the header doubles as the close control (✕ glyph, aria-label "Close <panel>"). Desktop path
+  untouched (still honors controlled/uncontrolled open — e.g. the journal's desktop button).
+- `ui/MobileNav.tsx`: the bottom bar — one labelled icon button per registered panel (never
+  icon-only → button-name + 48px touch targets), aria-pressed, sorted by mobileOrder. Phone-only
+  via CSS; corner docks replace it on desktop. The 6 drawer panels each pass their mobile props
+  (Goals🎯/Research🔬/Command🛰️/Travel🚀/Journal📖/Defense🛡️). Top-strip Journal button hidden
+  on phone (journal is a nav item there).
+- hud.css: sheet (fixed, lower third, slide-up anim, grab handle, single scroll context, safe-
+  area inset) + nav bar styles; removed the old accordion-drawer rules (drawer → display:contents
+  so children self-position); nav hidden via a `min-width:721px` query (order-independent);
+  reduced-motion disables the slide.
+- Preview gains a 'HUD' mode (mounts the REAL Hud over a launched, charted world) so the full
+  overlay + mobile sheet are eyeballable/smoke-testable at any viewport — resize ≤720px for the
+  phone layout.
+- Verified: gate GREEN; mobilehud smoke @390px — nav bar visible w/ 5 available icons, no sheet
+  open at rest (game unobstructed), tapping Research opens a lower-third sheet (top >50%h,
+  height ≤45%h), opening Journal closes Research (ONE at a time, aria-pressed flips), the sheet
+  header ✕ closes it, **axe 0 violations**, console CLEAN; @1280px the nav is hidden + no sheets
+  (desktop docks intact), console CLEAN; screenshot reviewed (game visible mid-screen, sheet +
+  icon bar at the bottom).
+- TASTE/FOLLOW-UP: the phone TOP strip (ResourceHud + Speed) still lists 5 resources vertically
+  and takes ~40% height — a separate compaction pass could reclaim more game view (out of scope
+  for this nav redesign).
+
 ## Journal depth + polish — timestamps, detail, open button, toast, audio (tasks #51–53) — done, verified
 - DEPTH:
   - First-logged TIMESTAMP per world. The sim has no "discovered-at" field, so `sim/journalLog.ts`

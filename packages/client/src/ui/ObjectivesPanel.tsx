@@ -39,6 +39,10 @@ export function ObjectivesPanel() {
       title={`Objectives (${doneCount}/${chain.length})`}
       defaultOpen={!isPhoneViewport()}
       className="hud-dock hud-dock-objectives"
+      mobileId="objectives"
+      mobileLabel="Goals"
+      mobileIcon="🎯"
+      mobileOrder={1}
       style={{ width: 280, maxHeight: "calc(100vh - 24px)", overflowY: "auto" }}
     >
       {/* The "Next:" hint — the live goal, shown prominently. */}

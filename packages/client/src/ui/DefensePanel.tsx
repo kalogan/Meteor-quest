@@ -60,6 +60,10 @@ export function DefensePanel() {
       title={`Defenses · ${scopeLabel}`}
       defaultOpen={!isPhoneViewport()}
       className="hud-dock hud-dock-br"
+      mobileId="defense"
+      mobileLabel="Defense"
+      mobileIcon="🛡️"
+      mobileOrder={6}
       style={{ width: 224 }}
     >
       <div style={{ ...subtle, fontSize: 11, marginBottom: 8 }}>

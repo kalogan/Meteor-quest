@@ -182,6 +182,10 @@ export function JournalPanel() {
       open={open}
       onOpenChange={setOpen}
       className="hud-dock hud-dock-journal"
+      mobileId="journal"
+      mobileLabel="Journal"
+      mobileIcon="📖"
+      mobileOrder={5}
       style={{ width: 320, maxHeight: "70vh", overflowY: "auto" }}
     >
       <div data-testid="journal-panel">

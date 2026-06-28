@@ -190,6 +190,10 @@ export function JourneyPanel() {
       title="Expedition"
       defaultOpen={!isPhoneViewport()}
       className="hud-dock hud-dock-journey"
+      mobileId="expedition"
+      mobileLabel="Travel"
+      mobileIcon="🚀"
+      mobileOrder={4}
       style={{ width: 280 }}
     >
       {arrival ? (
