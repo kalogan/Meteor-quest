@@ -1,8 +1,10 @@
 import type { ResourceId } from "@meteor/shared";
 import { getContentPack, tierRank } from "@meteor/shared";
+import { useState } from "react";
 import { useSim } from "../sim/store";
 import { useSelection } from "../sim/selection";
 import { CollapsiblePanel, isPhoneViewport } from "./CollapsiblePanel";
+import { PanelSearch } from "./PanelSearch";
 import { button, FOCUSABLE_RESOURCES, heading, subtle } from "./theme";
 
 /**
@@ -54,6 +56,7 @@ function CityTierView() {
   const game = useSim((s) => s.game);
   const dispatch = useSim((s) => s.dispatch);
   const { selectedId, selectedKind } = useSelection();
+  const [query, setQuery] = useState("");
 
   // Scope to the selected city (or all cities on a selected continent) when relevant.
   let cities = Object.values(game.cities);
@@ -68,25 +71,34 @@ function CityTierView() {
     scopeLabel = `${selCont.name} · cities`;
   }
 
+  const trimmed = query.trim().toLowerCase();
+  const visibleCities =
+    trimmed === "" ? cities : cities.filter((city) => city.name.toLowerCase().includes(trimmed));
+
   return (
     <>
       <div style={heading}>City Focus · {scopeLabel}</div>
       <div style={{ ...subtle, fontSize: 11, marginBottom: 8 }}>
         Authority sits at city tier — set each city's output by hand.
       </div>
+      <PanelSearch value={query} onChange={setQuery} placeholder="Search settlements…" testid="command-search" />
       <div className="hud-scroll" style={{ display: "flex", flexDirection: "column", gap: 10, maxHeight: 320, overflowY: "auto" }}>
-        {cities.map((city) => (
-          <div key={city.id}>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ fontWeight: 600 }}>{city.name}</span>
-              <span style={{ ...subtle, fontSize: 11 }}>{city.productivity.toFixed(1)}/s</span>
+        {visibleCities.length === 0 ? (
+          <div style={{ ...subtle, fontSize: 11 }}>No settlements match.</div>
+        ) : (
+          visibleCities.map((city) => (
+            <div key={city.id}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontWeight: 600 }}>{city.name}</span>
+                <span style={{ ...subtle, fontSize: 11 }}>{city.productivity.toFixed(1)}/s</span>
+              </div>
+              <FocusPicker
+                value={city.focus}
+                onPick={(r) => dispatch({ type: "setCityFocus", cityId: city.id, resource: r })}
+              />
             </div>
-            <FocusPicker
-              value={city.focus}
-              onPick={(r) => dispatch({ type: "setCityFocus", cityId: city.id, resource: r })}
-            />
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </>
   );

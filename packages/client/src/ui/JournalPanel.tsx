@@ -5,6 +5,7 @@ import { useJournalLog } from "../sim/journalLog";
 import { journalEntries, journalSummary, type JournalEntry, type JournalStatus } from "../sim/journal";
 import { CollapsiblePanel } from "./CollapsiblePanel";
 import { JournalThumbnail } from "./JournalThumbnail";
+import { PanelSearch } from "./PanelSearch";
 import { MUTED_TEXT, subtle } from "./theme";
 
 /**
@@ -168,9 +169,20 @@ export function JournalPanel() {
   const firstTick = useJournalLog((s) => s.firstTick);
   const reducedMotion = prefersReducedMotion();
 
+  const [query, setQuery] = useState("");
   const currentPlanetId = selectedKind === "planet" ? selectedId : null;
   const entries = useMemo(() => journalEntries(game, currentPlanetId), [game, currentPlanetId]);
   const summary = useMemo(() => journalSummary(game, entries), [game, entries]);
+
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? entries.filter(
+        (e) =>
+          e.planet.name.toLowerCase().includes(q) ||
+          (e.biome?.name ?? "").toLowerCase().includes(q) ||
+          e.system.name.toLowerCase().includes(q),
+      )
+    : entries;
 
   return (
     <CollapsiblePanel
@@ -191,11 +203,17 @@ export function JournalPanel() {
           <span><strong style={{ color: "#e8edf6" }}>{summary.minerals}</strong> minerals</span>
         </div>
 
+        {entries.length > 0 && (
+          <PanelSearch value={query} onChange={setQuery} placeholder="Search worlds…" testid="journal-search" />
+        )}
+
         {entries.length === 0 ? (
           <div style={{ ...subtle, fontSize: 12 }}>No worlds logged yet — chart a planet to begin your journal.</div>
+        ) : visible.length === 0 ? (
+          <div style={{ ...subtle, fontSize: 12 }}>No worlds match.</div>
         ) : (
           <ul style={{ margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-            {entries.map((entry) => (
+            {visible.map((entry) => (
               <EntryCard
                 key={entry.planet.id}
                 entry={entry}

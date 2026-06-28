@@ -1,8 +1,10 @@
 import type { GameState, TechNode } from "@meteor/shared";
 import { getContentPack } from "@meteor/shared";
 import { canResearch, findTech } from "@meteor/sim-core";
+import { useState } from "react";
 import { useSim } from "../sim/store";
 import { CollapsiblePanel, isPhoneViewport } from "./CollapsiblePanel";
+import { PanelSearch } from "./PanelSearch";
 import { button, subtle } from "./theme";
 
 /**
@@ -29,9 +31,15 @@ export function TechPanel() {
   const game = useSim((s) => s.game);
   const dispatch = useSim((s) => s.dispatch);
   const pack = getContentPack();
+  const [query, setQuery] = useState("");
 
   const current = game.research.current ? findTech(game.research.current) : null;
   const progressPct = current && current.cost > 0 ? Math.min(100, (game.research.progress / current.cost) * 100) : 0;
+
+  const q = query.trim().toLowerCase();
+  const visible = q
+    ? pack.tech.filter((node) => node.name.toLowerCase().includes(q) || node.category.toLowerCase().includes(q))
+    : pack.tech;
 
   return (
     <CollapsiblePanel
@@ -61,8 +69,11 @@ export function TechPanel() {
         <div style={{ ...subtle, fontSize: 11, marginBottom: 12 }}>No active research — pick a tech below.</div>
       )}
 
+      <PanelSearch value={query} onChange={setQuery} placeholder="Search tech…" testid="research-search" />
+
       <div className="hud-scroll" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {pack.tech.map((node) => {
+        {visible.length === 0 ? <div style={{ ...subtle, fontSize: 11 }}>No tech matches.</div> : null}
+        {visible.map((node) => {
           const unlocked = game.research.unlocked.includes(node.id);
           const active = game.research.current === node.id;
           const researchable = canResearch(game, node.id);

@@ -1,4 +1,4 @@
-import { COMMON_RESOURCES, type ResourceId } from "@meteor/shared";
+import { COMMON_RESOURCES } from "@meteor/shared";
 import { useSim } from "../sim/store";
 import { heading, MUTED_TEXT, panel, subtle } from "./theme";
 import { useIsPhone } from "./CollapsiblePanel";
@@ -16,19 +16,9 @@ import { useIsPhone } from "./CollapsiblePanel";
  * keep the game visible. Desktop keeps the full card.
  */
 
-/** Short labels for the compact phone chip bar (full names stay in each chip's aria-label). */
-const ABBR: Record<ResourceId, string> = {
-  minerals: "Min",
-  alloy: "Aly",
-  energy: "Ene",
-  research: "Sci",
-  fuel: "Fuel",
-  // Rare resources aren't shown in the common HUD, but the record must be total.
-  cryocrystal: "Cry",
-  silicate: "Sil",
-  biogel: "Bio",
-  oremetal: "Ore",
-};
+function cap(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 function rateColorOf(rate: number): string {
   return rate > 0.001 ? "#6fdc8c" : rate < -0.001 ? "#ff8a8a" : MUTED_TEXT;
@@ -51,7 +41,7 @@ export function ResourceHud() {
               className="hud-reschip"
               aria-label={`${r} ${value}, ${rate >= 0 ? "+" : ""}${rate.toFixed(1)} per second`}
             >
-              <span className="hud-reschip__abbr" aria-hidden="true">{ABBR[r]}</span>
+              <span className="hud-reschip__abbr" aria-hidden="true">{cap(r)}</span>
               <b aria-hidden="true">{value}</b>
               {active && (
                 <span aria-hidden="true" style={{ color: rateColorOf(rate), fontSize: 10 }}>

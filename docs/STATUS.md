@@ -2,6 +2,28 @@
 
 _Update every slice. A cold context should be able to resume from this file._
 
+## HUD v3 — panel search + distributed resbar + desktop multi-panel (tasks #58–60) — done, verified
+- SEARCH bars: reusable `ui/PanelSearch.tsx` (controlled type=search + clear button, accessible).
+  Wired into Research (filter tech by name/category), Command (filter settlements by name, in the
+  city-focus view), and Journal (filter worlds by planet/biome/system) — each shows a "No … match"
+  line when empty. Built Research + Command via parallel builders (disjoint files), Journal + the
+  component by the Architect.
+- MOBILE RESBAR: full resource WORDS now (Minerals/Alloy/Energy/Research/Fuel — dropped the
+  Min/Aly/… truncation) and `justify-content: space-between` so they distribute across the bar
+  width. (At ~390px "Fuel" wraps to a 2nd line; one row on wider phones.)
+- DESKTOP MULTI-PANEL: the action-bar nav now opens MULTIPLE panels at once (was one-at-a-time).
+  `mobileNav` open state is a Set (`openIds`); the bar toggles independently on desktop, but stays
+  single-select on phone (`selectOnly`, so the sheet is still one at a time). Open desktop panels
+  flow in a centered, bottom-anchored ROW above the bar (`.hud-drawer` → flex row, wrap-reverse;
+  `.hud-collapsible--dock` → static flow), side by side, each with its own scroll. CollapsiblePanel
+  renders a nav panel only while its id is in openIds (header ✕ closes just that one).
+- Verified: gate GREEN; HUD v3 smoke — DESKTOP @1400: open Research+Command+Journal → 3 docks
+  side-by-side (distinct x 252/540/828), each search box present, Research search filters
+  ("zzz"→"No tech matches", clear restores), header ✕ closes one (→2), **axe 0** (incl. label
+  rule), console CLEAN; PHONE @390: resbar shows all 5 full words + space-between, Research sheet
+  has its search, CLEAN. Screenshots reviewed (3 panels side-by-side, no overlap; distributed
+  resbar).
+
 ## Unified action bar (desktop + mobile) + Settings panel (tasks #56–57) — done, verified
 - UNIFIED the HUD on ALL breakpoints around ONE action bar. The heavy panels (Goals/Research/
   Command/Travel/Journal/Defense/Settings) open ONE AT A TIME from the bar — a bottom SHEET on

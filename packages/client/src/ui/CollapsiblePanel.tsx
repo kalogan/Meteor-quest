@@ -58,8 +58,8 @@ export function CollapsiblePanel({
   const regionId = useId();
 
   const isPhone = useIsPhone();
-  const navActive = useMobileNav((s) => s.active);
-  const setNavActive = useMobileNav((s) => s.setActive);
+  const openIds = useMobileNav((s) => s.openIds);
+  const closePanel = useMobileNav((s) => s.close);
   const register = useMobileNav((s) => s.register);
   const unregister = useMobileNav((s) => s.unregister);
 
@@ -78,12 +78,12 @@ export function CollapsiblePanel({
   // corner-docking at once (which overlapped on wide-but-short / busy screens). They render
   // only while active; otherwise they return null (still mounted → still registered in the nav).
   const navControlled = mobileId !== undefined;
-  const navActive_ = navActive === mobileId;
+  const navActive_ = mobileId !== undefined && openIds.includes(mobileId);
   const open = navControlled ? true : (controlledOpen ?? uncontrolledOpen);
 
   const toggle = () => {
     if (navControlled) {
-      setNavActive(null); // the header doubles as the close control
+      if (mobileId !== undefined) closePanel(mobileId); // the header doubles as the close control
       return;
     }
     const next = !open;

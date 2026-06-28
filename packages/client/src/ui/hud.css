@@ -180,16 +180,17 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 3px 10px;
-    padding: 6px 10px;
+    justify-content: space-between; /* distribute the resources across the full bar width */
+    gap: 4px 8px;
+    padding: 7px 12px;
     background: var(--hud-panel-bg);
     border: 1px solid var(--hud-panel-border);
     border-radius: 8px;
     backdrop-filter: blur(4px);
     color: var(--hud-text);
-    font: 600 12.5px/1 system-ui, sans-serif;
+    font: 600 13px/1 system-ui, sans-serif;
   }
-  .hud-reschip { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+  .hud-reschip { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
   .hud-reschip__abbr { color: var(--hud-muted); font-weight: 600; }
 
   /* The heavy panels no longer stack in an accordion — each opens as a bottom SHEET selected
@@ -299,9 +300,9 @@
   }
 }
 
-/* ---- Desktop (>720px): the SAME action bar, as a centered bottom pill; panels dock one at a
-   time on the right instead of corner-docking and overlapping. (min-width query so these rules
-   are independent of source order vs the phone block above.) ---- */
+/* ---- Desktop (>720px): the SAME action bar, as a centered bottom pill. Opened panels flow in a
+   centered ROW just above the bar — several can be open side-by-side; the game stays visible
+   above. (min-width query so these rules are independent of source order vs the phone block.) ---- */
 @media (min-width: 721px) {
   .hud-mobile-nav {
     display: flex;
@@ -337,22 +338,34 @@
   .hud-mobile-nav__btn[aria-pressed="true"] { color: #fff; background: rgba(43, 108, 255, 0.28); }
   .hud-mobile-nav__icon { font-size: 16px; }
 
-  /* Active panel docks on the RIGHT (resources own the top-left), above the action bar — one at
-     a time, tall, never overlapping. */
+  /* The open panels live in a centered, bottom-anchored row above the action bar. Extra panels
+     wrap upward (wrap-reverse). The row is click-through; each panel re-enables pointer-events. */
+  .hud-drawer {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: 84px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap-reverse;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 8px;
+    pointer-events: none;
+    z-index: 40;
+  }
+  /* Each opened panel flows in that row (one per nav toggle), with its own scroll. */
   .hud-collapsible--dock {
-    position: fixed !important;
-    right: 16px !important;
-    left: auto !important;
-    top: auto !important;
-    bottom: 84px !important;
+    position: static !important;
+    inset: auto !important;
     transform: none !important;
     margin: 0 !important;
-    max-height: calc(100vh - 110px) !important;
+    pointer-events: auto;
+    max-height: 62vh !important;
     overflow: hidden !important;
     display: flex;
     flex-direction: column;
     border-radius: 12px;
-    z-index: 40;
   }
   .hud-collapsible--dock .hud-collapsible__region { flex: 1; overflow-y: auto; }
   .hud-collapsible--dock .hud-scroll { max-height: none !important; }

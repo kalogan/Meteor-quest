@@ -1,18 +1,22 @@
 import { useMobileNav, navPanels } from "../sim/mobileNav";
+import { useIsPhone } from "./CollapsiblePanel";
 
 /**
- * [mobile HUD] The phone BOTTOM ICON BAR. One icon per available heavy panel (panels
- * self-register, so this stays in lock-step with what's on screen). Tapping an icon slides that
- * panel up as a sheet over the lower third; tapping the active icon again closes it, so the game
- * stays visible. Hidden on desktop (CSS), where panels corner-dock instead.
+ * [HUD action bar] The unified panel selector — a bottom icon bar on phones, a centered bottom
+ * pill on desktop. One icon per available heavy panel (panels self-register, so this stays in
+ * lock-step with what's on screen). On PHONE, tapping opens that panel as a sheet and closes any
+ * other (one at a time). On DESKTOP, tapping toggles that panel independently, so you can have
+ * several open side-by-side above the bar. Tapping an open icon closes it; the game stays visible.
  *
  * Accessibility: a labelled nav landmark; each icon is a real button with aria-pressed (open
  * state) and a text label (never icon-only), meeting button-name + touch-target requirements.
  */
 export function MobileNav() {
-  const active = useMobileNav((s) => s.active);
-  const setActive = useMobileNav((s) => s.setActive);
+  const openIds = useMobileNav((s) => s.openIds);
+  const toggle = useMobileNav((s) => s.toggle);
+  const selectOnly = useMobileNav((s) => s.selectOnly);
   const panels = useMobileNav((s) => s.panels);
+  const isPhone = useIsPhone();
   const items = navPanels(panels);
 
   if (items.length === 0) return null;
@@ -20,7 +24,7 @@ export function MobileNav() {
   return (
     <nav className="hud-mobile-nav" aria-label="Game panels">
       {items.map((p) => {
-        const isActive = active === p.id;
+        const isActive = openIds.includes(p.id);
         return (
           <button
             key={p.id}
@@ -28,7 +32,7 @@ export function MobileNav() {
             className="hud-mobile-nav__btn"
             data-testid={`mobile-nav-${p.id}`}
             aria-pressed={isActive}
-            onClick={() => setActive(isActive ? null : p.id)}
+            onClick={() => (isPhone ? selectOnly(isActive ? null : p.id) : toggle(p.id))}
           >
             <span className="hud-mobile-nav__icon" aria-hidden="true">{p.icon}</span>
             <span className="hud-mobile-nav__label">{p.label}</span>

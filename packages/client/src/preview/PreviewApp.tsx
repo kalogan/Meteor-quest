@@ -384,7 +384,7 @@ function JournalMode({ seed, frozen }: { seed: number; frozen: boolean }) {
     // pre-charted worlds don't all toast on entry.
     useJournalLog.getState().rebaseline(g);
     // The journal panel is nav-controlled now — open it so this mode shows the logbook.
-    useMobileNav.getState().setActive("journal");
+    useMobileNav.getState().selectOnly("journal");
   }, [seed, setGame]);
 
   // Demo: chart the next discovered-but-unscanned world → exercises the real
