@@ -213,6 +213,28 @@
     flex: 0 0 auto;
   }
 
+  /* Compact resource CHIP BAR (phone): one thin row instead of the full card, so the
+     game keeps the screen. */
+  .hud-resbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 3px 10px;
+    padding: 6px 10px;
+    background: var(--hud-panel-bg);
+    border: 1px solid var(--hud-panel-border);
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+    color: var(--hud-text);
+    font: 600 12.5px/1 system-ui, sans-serif;
+  }
+  .hud-reschip { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+  .hud-reschip__abbr { color: var(--hud-muted); font-weight: 600; }
+
+  /* Trim the speed control: drop the "speed" word, tighten padding. */
+  .hud-speed-label { display: none; }
+  .hud-panel--speed { padding: 4px 6px !important; gap: 4px !important; }
+
   /* The heavy panels no longer stack in an accordion — each opens as a bottom SHEET selected
      from the icon nav bar (see .hud-collapsible--sheet below). The drawer wrapper stays
      layout-neutral (display:contents) so its children position themselves. */

@@ -21,7 +21,7 @@ export function SpeedControls() {
       role="group"
       aria-label="Game speed"
     >
-      <span style={{ ...subtle, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.3 }}>speed</span>
+      <span className="hud-speed-label" style={{ ...subtle, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.3 }}>speed</span>
       {SPEEDS.map((s) => (
         <button
           key={s}

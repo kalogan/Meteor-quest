@@ -36,9 +36,15 @@ _Update every slice. A cold context should be able to resume from this file._
   header ✕ closes it, **axe 0 violations**, console CLEAN; @1280px the nav is hidden + no sheets
   (desktop docks intact), console CLEAN; screenshot reviewed (game visible mid-screen, sheet +
   icon bar at the bottom).
-- TASTE/FOLLOW-UP: the phone TOP strip (ResourceHud + Speed) still lists 5 resources vertically
-  and takes ~40% height — a separate compaction pass could reclaim more game view (out of scope
-  for this nav redesign).
+- FOLLOW-UP DONE (task #55): the phone TOP strip is now compact. ResourceHud collapses to a thin
+  CHIP BAR on phones (abbrev + value + a coloured rate caret — Min/Aly/Ene/Sci/Fuel; no title/
+  authority/heading rows; full name + rate in each chip's aria-label). SpeedControls drops its
+  "speed" word + tightens padding. Strip height ~360px → ~69px (real-device screenshots showed
+  the old card ate ~40% of the screen). Desktop card unchanged (useIsPhone branch). Verified:
+  gate GREEN; topstrip smoke @390px — 1 chip bar, 5 chips, strip 69px, no "Meteor Quest" card,
+  axe 0, console CLEAN; @1280px the full card is intact + no chip bar; screenshot reviewed
+  (planet fills the screen). REMAINING ideas to reclaim more view: merge chips+speed onto one
+  row on wider phones, or an optional "hide HUD" peek toggle.
 
 ## Journal depth + polish — timestamps, detail, open button, toast, audio (tasks #51–53) — done, verified
 - DEPTH:
