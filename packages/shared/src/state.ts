@@ -100,6 +100,36 @@ export interface ActiveEvent {
   spawnedAtTick?: number;
 }
 
+/**
+ * [hostiles] Space beasts & pirates — roaming threats tied to EXPLORATION + TRAVEL (distinct
+ * from the abstract `ActiveEvent` threats that strike settled colonies). A beast/pirate spawns
+ * as a LURKER when you uncover a frontier system, or AMBUSHES an expedition in transit; it
+ * patrols galaxy space until engaged. Resolved through the existing defense math via the
+ * `engageHostile` command (fight / flee / pay-off). Spawning is gated behind
+ * `GameState.hostilesEnabled` so the shipped game is unaffected until it's switched on.
+ */
+export type HostileKind = "beast" | "pirate";
+
+export interface RoamingHostile {
+  id: string;
+  kind: HostileKind;
+  /** The system this hostile haunts (lurker) or was spawned near (ambusher). */
+  systemId: string;
+  /** Current galaxy-space position (same frame as systems/journeys). */
+  pos: { x: number; y: number; z: number };
+  /** Patrol orbit around its system (advanced each tick while not engaged). */
+  patrolAngle: number;
+  patrolRadius: number;
+  /** Engagement strength, compared against the player's defense (like event severity). */
+  threat: number;
+  /** Revealed to the player (lurkers/ambushers are visible on spawn). */
+  discovered: boolean;
+  /** Set when it has pinned an expedition in transit — the player must respond. */
+  engagedJourneyId?: string;
+  /** Tick it wanders off if never engaged (frontier predators don't linger forever). */
+  expiresAtTick: number;
+}
+
 export interface ResearchState {
   unlocked: string[];
   current: string | null;
@@ -145,6 +175,11 @@ export interface GameState {
   cities: Record<string, City>;
 
   events: ActiveEvent[];
+  /** [hostiles] Roaming space beasts & pirates, keyed by id. Empty unless `hostilesEnabled`. */
+  hostiles: Record<string, RoamingHostile>;
+  /** [hostiles] When true, the fog/launch hooks may spawn beasts/pirates. Off in the shipped
+   * game (the system runs inert) until the feature is switched on. */
+  hostilesEnabled?: boolean;
   /** [journey] Active expeditions in flight between systems (usually 0–1 in the slice). */
   journeys: Record<string, Journey>;
   /** [objectives] Guided-goal progress: completed objective ids + whether the victory
@@ -177,4 +212,8 @@ export type Command =
   /** Lightly nudge an in-flight expedition's heading. `turn` ∈ [-1, 1]. */
   | { type: "steerJourney"; journeyId: string; turn: number }
   /** Abort an expedition (turn back / recall). */
-  | { type: "abortJourney"; journeyId: string };
+  | { type: "abortJourney"; journeyId: string }
+  // ── [hostiles] respond to a space beast / pirate encounter ──────────────────
+  /** Resolve an encounter with a roaming hostile: fight it (defense vs threat), flee
+   * (abort the pinned expedition), or pay it off (spend resources to pass). */
+  | { type: "engageHostile"; hostileId: string; response: "fight" | "flee" | "payoff" };

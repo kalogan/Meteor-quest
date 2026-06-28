@@ -1,4 +1,5 @@
 import type { GameState } from "@meteor/shared";
+import { maybeSpawnLurkerOnDiscover } from "./hostiles.js";
 
 /**
  * Fog of war — sensor-tech scaled reveal. Run each tick: any system within the
@@ -16,6 +17,8 @@ export function runFog(state: GameState): void {
     if (system.distanceFromHome <= state.sensorRange) {
       system.discovered = true;
       state.log.push({ tick: state.tick, message: `Sensors detected ${system.name}.` });
+      // [hostiles] a freshly-uncovered frontier system may already harbour a lurker (gated).
+      maybeSpawnLurkerOnDiscover(state, system.id);
     }
   }
 }

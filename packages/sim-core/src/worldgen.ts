@@ -272,6 +272,7 @@ export function createInitialState(seed: number): GameState {
     continents,
     cities,
     events: [],
+    hostiles: {},
     journeys: {},
     objectives: { completed: [], won: false },
     log: [{ tick: 0, message: "The cradle awakens. Build your way to the stars." }],

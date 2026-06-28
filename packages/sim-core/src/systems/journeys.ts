@@ -1,5 +1,6 @@
 import type { GameState, Journey } from "@meteor/shared";
 import { FUEL_PER_DISTANCE } from "./travel.js";
+import { isJourneyEngaged } from "./hostiles.js";
 
 /**
  * Journey — a VISIBLE real-time expedition between systems (God-view, watch-it-fly
@@ -202,6 +203,9 @@ export function runJourneys(state: GameState): void {
       delete state.journeys[journey.id];
       continue;
     }
+
+    // [hostiles] A pinned expedition holds position until the encounter is resolved.
+    if (isJourneyEngaged(state, journey.id)) continue;
 
     // AUTOPILOT: rotate heading toward the current bearing-to-target.
     const toTarget = sub(target.position, journey.pos);

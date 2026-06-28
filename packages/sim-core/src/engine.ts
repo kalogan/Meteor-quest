@@ -4,6 +4,7 @@ import { runResearch } from "./systems/research.js";
 import { runFog } from "./systems/fog.js";
 import { runThreats } from "./systems/threats.js";
 import { runJourneys } from "./systems/journeys.js";
+import { runHostiles } from "./systems/hostiles.js";
 import { runObjectives } from "./systems/objectives.js";
 
 /**
@@ -28,6 +29,7 @@ export function tick(prev: GameState): GameState {
   runFog(state);
   runThreats(state);
   runJourneys(state);
+  runHostiles(state); // [hostiles] patrol/intercept/ambush/expire (inert when none)
   runObjectives(state);
   return state;
 }

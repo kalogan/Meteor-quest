@@ -11,7 +11,8 @@ const SAVE_KEY = "meteor-quest:save";
 // fresh game) instead of resuming a state missing newly-required fields.
 // v2: added GameState.journeys (expeditions).
 // v3: added GameState.objectives (guided-goal progress).
-const SAVE_VERSION = 3;
+// v4: added GameState.hostiles (roaming beasts & pirates).
+const SAVE_VERSION = 4;
 
 interface SaveEnvelope {
   version: number;

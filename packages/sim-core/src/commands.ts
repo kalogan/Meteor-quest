@@ -5,6 +5,7 @@ import { systemInSensorRange } from "./systems/fog.js";
 import { setEventResponse } from "./systems/threats.js";
 import { applyBuildDefense } from "./systems/defense.js";
 import { launch, steer, abort } from "./systems/journeys.js";
+import { resolveEncounter, hostileLabel } from "./systems/hostiles.js";
 
 /**
  * Authoritative command reducer. Pure: clones state, applies one command, returns
@@ -73,6 +74,17 @@ export function applyCommand(prev: GameState, cmd: Command): GameState {
         !!system &&
         (system.id === state.homeSystemId ||
           (state.orbitalLaunched && system.distanceFromHome <= state.maxRange));
+      // [hostiles] a lurking beast/pirate guards its system — drive it off before settling.
+      const guard = system
+        ? Object.values(state.hostiles).find((h) => h.systemId === system.id)
+        : undefined;
+      if (guard) {
+        state.log.push({
+          tick: state.tick,
+          message: `A ${hostileLabel(guard.kind)} guards this system — drive it off first.`,
+        });
+        break;
+      }
       if (planet && planet.scanned && !planet.settled && reachable) {
         planet.settled = true;
         state.log.push({ tick: state.tick, message: `Settled ${planet.name}.` });
@@ -119,6 +131,10 @@ export function applyCommand(prev: GameState, cmd: Command): GameState {
     }
     case "abortJourney":
       abort(state, cmd.journeyId);
+      break;
+    // ── [hostiles] resolve a space beast / pirate encounter ───────────────────
+    case "engageHostile":
+      resolveEncounter(state, cmd.hostileId, cmd.response);
       break;
   }
   return state;

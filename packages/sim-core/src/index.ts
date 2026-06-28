@@ -48,3 +48,16 @@ export {
   nextObjective,
   isObjectiveComplete,
 } from "./systems/objectives.js";
+export {
+  HOSTILES,
+  runHostiles,
+  spawnLurker,
+  spawnAmbush,
+  maybeSpawnLurkerOnDiscover,
+  isJourneyEngaged,
+  resolveEncounter,
+  hostileDefense,
+  predictFight,
+  canAffordPayoff,
+  hostileLabel,
+} from "./systems/hostiles.js";

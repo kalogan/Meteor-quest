@@ -52,6 +52,34 @@ _Update every slice. A cold context should be able to resume from this file._
 - FOLLOW-UP: desktop default is no panel open (clean game view) — if players want a panel pinned,
   a "keep open"/multi-pin affordance could come later. Tactical/threats top-center desktop is new.
 
+## Space beasts & pirates — encounters in preview (tasks #61–62) — done, verified
+- The abstract pirate/beast THREATS already existed (ActiveEvent kinds). This adds ROAMING
+  HOSTILES tied to EXPLORATION + TRAVEL, with identity, demoed end-to-end in a preview 'Hostiles'
+  mode (kept preview-driven; the shipped game is unchanged until we flip `hostilesEnabled` on in
+  the live tick).
+- SIM (sim-core/systems/hostiles.ts, deterministic + tested): `RoamingHostile` {kind beast|pirate,
+  pos/patrolAngle/patrolRadius, threat, discovered, engagedJourneyId, expiresAtTick} in
+  GameState.hostiles. LURKER spawns on fog-reveal of a frontier system (gated, frontier-weighted
+  threat); AMBUSH spawns per-tick on enroute expeditions; patrolling lurkers INTERCEPT passing
+  ships. A pinned expedition holds position (runJourneys skips engaged). `resolveEncounter`
+  (engageHostile cmd): FIGHT (defense vs threat → destroy+salvage / lose the run or resources),
+  FLEE (abort the pinned run), PAY-OFF (spend to pass). Lurkers BLOCK settling their system until
+  cleared. Reuses playerDefense+localDefense; seeded RNG (no Math.random). `runHostiles` in the
+  tick is inert when empty. Save v3→v4 (additive `hostiles`).
+- CLIENT: `world/hostiles/BeastMesh` (spiky multi-eyed leviathan) + `PirateMesh` (angular raider,
+  ram prow + swept wings) built by parallel builders; `world/HostilesLayer` renders discovered
+  hostiles at galaxy positions sized by threat with a threat ring; `ui/EncounterPanel` lists each
+  hostile with threat-vs-defense, win/lose prediction, and Fight/Flee/Pay-off. Preview 'Hostiles'
+  mode: launch-ready galaxy + hostilesEnabled, drops lurkers on the near frontier, real-time
+  ticker (patrol/intercept/ambush), launch buttons, Reveal-frontier, Reset.
+- Verified: gate GREEN (121 sim tests incl. +5 hostiles: gating/determinism, lurker-blocks-settle,
+  ambush-pins-journey + flee, pay-off). Hostiles smoke — 4 lurkers (beast+pirates) render in the
+  galaxy, encounter panel resolves (pay-off 4→3, log confirms), launch flies, **axe 0**, console
+  CLEAN; screenshots reviewed (distinct menacing silhouettes, threat-vs-defense readout).
+- NOT YET SHIPPED: `hostilesEnabled` is off in createInitialState, so the live game spawns none
+  (runHostiles inert). Flipping it on + tuning rates/threat/UI placement in the real HUD is the
+  "ship it" follow-up. Encounter resolution is threshold (defense≥threat), not a minigame.
+
 ## Mobile HUD redesign — bottom icon nav + bottom sheet (task #54) — done, verified
 - Replaced the phone ACCORDION DRAWER (which stacked every heavy panel and ate the screen) with
   a BOTTOM ICON NAV BAR + a single bottom SHEET. Tapping an icon slides that one panel up into

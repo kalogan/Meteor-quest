@@ -12,6 +12,9 @@ import { JournalPanel } from "../ui/JournalPanel";
 import { JournalToastHost } from "../ui/JournalToastHost";
 import { MobileNav } from "../ui/MobileNav";
 import { Hud } from "../ui/Hud";
+import { HostilesLayer } from "../world/HostilesLayer";
+import { EncounterPanel } from "../ui/EncounterPanel";
+import { spawnLurker } from "@meteor/sim-core";
 import { useJournalLog } from "../sim/journalLog";
 import { useMobileNav } from "../sim/mobileNav";
 import { SurfaceTuner } from "./SurfaceTuner";
@@ -37,7 +40,7 @@ import "../ui/hud.css";
  * Production-truthful: it mounts the SAME WorldView/PlanetView the game ships and
  * the SAME content pack via the seam (dataSource) — never a fork "for preview".
  */
-type Mode = "world" | "biomes" | "tech" | "props" | "surface" | "avatar" | "journal" | "hud" | "flight" | "intro";
+type Mode = "world" | "biomes" | "tech" | "props" | "surface" | "avatar" | "journal" | "hud" | "flight" | "hostiles" | "intro";
 
 const MODES: { id: Mode; label: string }[] = [
   { id: "world", label: "World" },
@@ -49,6 +52,7 @@ const MODES: { id: Mode; label: string }[] = [
   { id: "journal", label: "Journal" },
   { id: "hud", label: "HUD" },
   { id: "flight", label: "Flight" },
+  { id: "hostiles", label: "Hostiles" },
   { id: "intro", label: "Intro" },
 ];
 
@@ -69,7 +73,7 @@ export function PreviewApp() {
   // seed 0 == the on-disk identity world and every seed is reproducible. Flight and
   // Intro modes install their OWN world, so don't stomp it with a plain reset.
   useEffect(() => {
-    if (mode !== "flight" && mode !== "intro" && mode !== "surface" && mode !== "avatar" && mode !== "journal" && mode !== "hud") reset(seed);
+    if (mode !== "flight" && mode !== "intro" && mode !== "surface" && mode !== "avatar" && mode !== "journal" && mode !== "hud" && mode !== "hostiles") reset(seed);
   }, [seed, reset, mode]);
 
   const tech = useMemo(() => listTech(), []);
@@ -140,6 +144,7 @@ export function PreviewApp() {
         {mode === "journal" && <JournalMode seed={seed} frozen={frozen} />}
         {mode === "hud" && <HudMode seed={seed} frozen={frozen} />}
         {mode === "flight" && <FlightMode seed={seed} frozen={frozen} />}
+        {mode === "hostiles" && <HostilesMode seed={seed} frozen={frozen} />}
         {mode === "intro" && <IntroMode seed={seed} />}
       </main>
       {/* [tech props] Hover-a-structure tooltip, available over every 3D mode. */}
@@ -556,6 +561,108 @@ function FlightMode({ seed, frozen }: { seed: number; frozen: boolean }) {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Hostiles mode — the space beasts & pirates sandbox. Installs a launch-ready galaxy with the
+ * hostiles feature ON, drops a couple of LURKERS on the nearest frontier systems, and frames the
+ * whole galaxy. A real-time ticker advances the REAL sim so hostiles patrol, intercept passing
+ * expeditions, and ambush enroute ships; the EncounterPanel resolves them (fight / flee / pay-off).
+ * Production-truthful — the same WorldView + sim, just driven here for the Director to eyeball.
+ */
+function HostilesMode({ seed, frozen }: { seed: number; frozen: boolean }) {
+  const setGame = useSim((s) => s.setGame);
+  const game = useSim((s) => s.game);
+  const dispatch = useSim((s) => s.dispatch);
+  const select = useSelection((s) => s.select);
+  const [run, setRun] = useState(0);
+
+  useEffect(() => {
+    const g = flightTestState(seed);
+    g.hostilesEnabled = true;
+    g.maxRange = Math.max(g.maxRange, 5000);
+    g.sensorRange = Math.max(g.sensorRange, 360); // uncover the near frontier as time passes
+    g.stockpiles.minerals = 200;
+    g.stockpiles.alloy = 80;
+    // Drop a lurker on the two nearest non-home systems for immediate content.
+    const near = Object.values(g.systems)
+      .filter((s) => s.id !== g.homeSystemId)
+      .sort((a, b) => a.distanceFromHome - b.distanceFromHome);
+    for (const sys of near.slice(0, 2)) {
+      sys.discovered = true;
+      spawnLurker(g, sys.id);
+    }
+    setGame(g);
+    select(null, null); // frame the whole galaxy so the hostiles are visible
+  }, [seed, setGame, select, run]);
+
+  useFlightTicker(frozen); // advance the real sim (patrol / intercept / ambush)
+
+  const targets = Object.values(game.systems)
+    .filter((s) => s.id !== game.homeSystemId)
+    .sort((a, b) => a.distanceFromHome - b.distanceFromHome);
+  const active = Object.values(game.journeys)[0];
+  const hostileCount = Object.values(game.hostiles).length;
+
+  return (
+    <div style={{ position: "absolute", inset: 0 }} data-testid="hostiles-mode">
+      <Canvas
+        data-testid="hostiles-canvas"
+        frameloop={frozen ? "demand" : "always"}
+        camera={{ position: [6, 5, 9], fov: 50, near: 0.1, far: 4000 }}
+      >
+        <WorldView />
+        <HostilesLayer />
+      </Canvas>
+
+      <EncounterPanel />
+
+      <div
+        style={{
+          position: "absolute", bottom: 12, left: 12, width: 250,
+          background: "rgba(10,14,22,0.9)", border: BORDER, borderRadius: 8, padding: 12, pointerEvents: "auto",
+          color: "#e8edf6", font: "500 13px/1.4 system-ui, sans-serif",
+        }}
+      >
+        <strong>Beasts &amp; Pirates</strong>
+        <div style={{ color: "#aab4c8", fontSize: 12, margin: "4px 0 10px" }}>
+          {hostileCount} hostile{hostileCount === 1 ? "" : "s"} roaming · launch into them to get ambushed.
+        </div>
+        {active ? (
+          <div data-testid="hostiles-flight" style={{ color: "#aab4c8", fontSize: 12 }}>
+            Expedition → {systemName(game, active.targetSystemId)} · {active.status}
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {targets.slice(0, 3).map((sys) => (
+              <button
+                key={sys.id}
+                data-testid={`hostiles-launch-${sys.id}`}
+                onClick={() => dispatch({ type: "launchJourney", targetSystemId: sys.id })}
+                style={{ ...tabStyle(false), textAlign: "left" }}
+              >
+                Launch to {sys.name} <span style={{ color: "#aab4c8" }}>· {sys.distanceFromHome.toFixed(0)} ly</span>
+              </button>
+            ))}
+          </div>
+        )}
+        <button
+          data-testid="hostiles-reveal"
+          onClick={() => setGame({ ...game, sensorRange: 5000 })}
+          style={{ ...tabStyle(false), marginTop: 8, width: "100%" }}
+        >
+          Reveal the whole frontier
+        </button>
+        <button
+          data-testid="hostiles-reset"
+          onClick={() => setRun((r) => r + 1)}
+          style={{ ...tabStyle(false), marginTop: 6, width: "100%" }}
+        >
+          Reset
+        </button>
       </div>
     </div>
   );
