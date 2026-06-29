@@ -52,6 +52,18 @@ _Update every slice. A cold context should be able to resume from this file._
 - FOLLOW-UP: desktop default is no panel open (clean game view) — if players want a panel pinned,
   a "keep open"/multi-pin affordance could come later. Tactical/threats top-center desktop is new.
 
+## Rare-resource discoverability hints — done, verified
+- After the deadlock fix, made where rares come from OBVIOUS in-game:
+  - ResourceHud gained a "RARE · from settled worlds" section listing any rare you have/produce
+    (stock + ±/s), so e.g. oremetal +0.5/s from the cradle is visible (commons-only before).
+    Desktop card + the mobile chip bar both show active rares.
+  - TechPanel's gate hint now NAMES the world to settle: "needs silicate — settle a Desert World"
+    (maps requiredResource → the biome whose uniqueResource it is) instead of the vague
+    "(explore to claim it)".
+- Verified: gate GREEN; hint smoke @1400 — after advancing the sim the cradle shows oremetal
+  +0.5/s in the Rare section, Research shows "settle a … World" on gated techs, Warp Fundamentals
+  is researchable (no oremetal block), console CLEAN; screenshot reviewed.
+
 ## Bootstrap-deadlock fix — settled worlds yield their unique resource — done, verified
 - BUG (player got stuck, couldn't warp far enough): rare resources (cryocrystal/silicate/biogel/
   oremetal) were NEVER produced — `biome.uniqueResource` was only used by validation + the tech

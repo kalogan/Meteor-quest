@@ -14,6 +14,11 @@ import { button, subtle } from "./theme";
  * live progress bar.
  */
 
+/** The biome whose unique resource is `res` — i.e. the world you must settle to get it. */
+function biomeYielding(res: string): string | undefined {
+  return getContentPack().biomes.find((b) => b.uniqueResource === res)?.name;
+}
+
 function whyLocked(state: GameState, node: TechNode): string | null {
   if (state.research.unlocked.includes(node.id)) return null;
   const missingPrereqs = node.prereqs.filter((p) => !state.research.unlocked.includes(p));
@@ -22,7 +27,9 @@ function whyLocked(state: GameState, node: TechNode): string | null {
     return `needs ${names.join(", ")}`;
   }
   if (node.requiredResource && (state.stockpiles[node.requiredResource] ?? 0) <= 0) {
-    return `needs ${node.requiredResource} (explore to claim it)`;
+    // Name the world to settle — rare resources come from settling that biome ("explore to claim").
+    const world = biomeYielding(node.requiredResource);
+    return world ? `needs ${node.requiredResource} — settle a ${world}` : `needs ${node.requiredResource}`;
   }
   return null;
 }
