@@ -300,16 +300,19 @@
   }
 }
 
-/* ---- Desktop (>720px): the SAME action bar, as a centered bottom pill. Opened panels flow in a
-   centered ROW just above the bar — several can be open side-by-side; the game stays visible
-   above. (min-width query so these rules are independent of source order vs the phone block.) ---- */
+/* ---- Desktop (>720px): the action bar is a vertical RIGHT RAIL; opened panels dock just to its
+   LEFT and stack leftward, so the centre/left of the screen stays clear for the game. (min-width
+   query so these rules are independent of source order vs the phone block.) ---- */
 @media (min-width: 721px) {
   .hud-mobile-nav {
     display: flex;
+    flex-direction: column;
     position: fixed;
-    bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    left: auto;
+    bottom: auto;
     gap: 4px;
     padding: 6px;
     background: rgba(8, 11, 18, 0.92);
@@ -318,50 +321,52 @@
     backdrop-filter: blur(8px);
     pointer-events: auto;
     z-index: 45;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
   }
   .hud-mobile-nav__btn {
     display: flex;
     flex: 0 0 auto;
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
-    gap: 6px;
-    min-height: 40px;
-    padding: 6px 12px;
+    justify-content: center;
+    gap: 3px;
+    min-height: 50px;
+    min-width: 64px;
+    padding: 7px 8px;
     border: none;
     border-radius: 9px;
     background: none;
     color: var(--hud-muted);
     cursor: pointer;
-    font: 700 13px/1 system-ui, sans-serif;
+    font: 700 10px/1 system-ui, sans-serif;
   }
   .hud-mobile-nav__btn:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
   .hud-mobile-nav__btn[aria-pressed="true"] { color: #fff; background: rgba(43, 108, 255, 0.28); }
-  .hud-mobile-nav__icon { font-size: 16px; }
+  .hud-mobile-nav__icon { font-size: 18px; }
 
-  /* The open panels live in a centered, bottom-anchored row above the action bar. Extra panels
-     wrap upward (wrap-reverse). The row is click-through; each panel re-enables pointer-events. */
+  /* Opened panels dock just LEFT of the rail and stack leftward (row-reverse: first opened sits
+     nearest the rail). Top-anchored + tall. Click-through container; each panel re-enables it. */
   .hud-drawer {
     position: fixed;
-    left: 8px;
-    right: 8px;
-    bottom: 84px;
+    right: 116px;
+    top: 12px;
+    bottom: 12px;
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap-reverse;
-    align-items: flex-end;
-    justify-content: center;
+    flex-direction: row-reverse;
+    align-items: flex-start;
     gap: 8px;
     pointer-events: none;
     z-index: 40;
   }
-  /* Each opened panel flows in that row (one per nav toggle), with its own scroll. */
+  /* Each opened panel flows in the right-anchored row, top-aligned + tall, with its own scroll. */
   .hud-collapsible--dock {
     position: static !important;
     inset: auto !important;
     transform: none !important;
     margin: 0 !important;
     pointer-events: auto;
-    max-height: 62vh !important;
+    max-height: calc(100vh - 24px) !important;
     overflow: hidden !important;
     display: flex;
     flex-direction: column;
@@ -370,7 +375,7 @@
   .hud-collapsible--dock .hud-collapsible__region { flex: 1; overflow-y: auto; }
   .hud-collapsible--dock .hud-scroll { max-height: none !important; }
 
-  /* Threats move to top-center so they're clear of the bottom action bar. */
+  /* Threats: top-center, but kept clear of the right rail + docked panels. */
   .hud-dock-bc { top: 12px; bottom: auto; }
 }
 

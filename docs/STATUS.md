@@ -52,6 +52,23 @@ _Update every slice. A cold context should be able to resume from this file._
 - FOLLOW-UP: desktop default is no panel open (clean game view) — if players want a panel pinned,
   a "keep open"/multi-pin affordance could come later. Tactical/threats top-center desktop is new.
 
+## Desktop right-rail HUD + contextual Survey/Fly/Settle actions — done, verified
+- DESKTOP RIGHT RAIL (fix: centered bar + panels covered the whole screen). The action bar is now
+  a vertical RIGHT RAIL (icon-over-label, centered on the right edge); opened panels dock just to
+  its LEFT and stack leftward (row-reverse, top-anchored, tall), so the centre/left stays clear
+  for the game. Mobile bottom-bar layout unchanged. (hud.css min-width:721 block only.)
+- CONTEXT ACTIONS (fix: "I can't figure out how to survey/fly — I'm stuck"). New
+  `ui/ContextActions.tsx`: when you select a system/planet, a bottom-centre prompt surfaces the
+  one obvious next action — Fly here (launchJourney), Survey (scanPlanet), Settle (settlePlanet) —
+  or shows WHY it's gated (out of range / research Orbital Launch / out of fuel). Uses the real
+  launchBlocker/systemInSensorRange gating + dispatches the real commands. Mounted in GameRoot
+  (game) + globally in the preview (like SurfaceControl/PropTooltip — not in Hud, so it never
+  double-mounts in the preview HUD mode).
+- Verified: gate GREEN; rail+context smoke @1440 — nav rail on the right edge, two opened panels
+  dock on the right half (x 756/1044, left clear), selecting an unscanned planet shows Survey →
+  click scans it, selecting a system shows Fly, **axe 0**, console CLEAN; screenshot reviewed
+  (rail + Command/Research docked beside it, planet visible centre-left).
+
 ## Space beasts & pirates — encounters in preview (tasks #61–62) — done, verified
 - The abstract pirate/beast THREATS already existed (ActiveEvent kinds). This adds ROAMING
   HOSTILES tied to EXPLORATION + TRAVEL, with identity, demoed end-to-end in a preview 'Hostiles'

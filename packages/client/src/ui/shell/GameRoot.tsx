@@ -5,6 +5,7 @@ import { Hud } from "../Hud";
 import { PropTooltip } from "../PropTooltip";
 import { GovernorHint } from "../GovernorHint";
 import { SurfaceControl } from "../SurfaceControl";
+import { ContextActions } from "../ContextActions";
 import { useGameLoop } from "../../sim/useGameLoop";
 import { useAppPhase } from "../../sim/appPhase";
 import { PauseMenu } from "./PauseMenu";
@@ -48,6 +49,8 @@ export function GameRoot() {
       <GovernorHint />
       {/* [surface dive] Descend / pull-up control when a planet is focused. */}
       <SurfaceControl />
+      {/* [discoverability] Survey / fly / settle actions for the current selection. */}
+      <ContextActions />
       {phase === "paused" ? (
         <div className="shell-root">
           <PauseMenu onResume={() => useAppPhase.getState().setPhase("playing")} />

@@ -14,6 +14,7 @@ import { MobileNav } from "../ui/MobileNav";
 import { Hud } from "../ui/Hud";
 import { HostilesLayer } from "../world/HostilesLayer";
 import { EncounterPanel } from "../ui/EncounterPanel";
+import { ContextActions } from "../ui/ContextActions";
 import { spawnLurker } from "@meteor/sim-core";
 import { useJournalLog } from "../sim/journalLog";
 import { useMobileNav } from "../sim/mobileNav";
@@ -149,6 +150,8 @@ export function PreviewApp() {
       </main>
       {/* [tech props] Hover-a-structure tooltip, available over every 3D mode. */}
       <PropTooltip />
+      {/* [discoverability] Contextual survey/fly/settle actions for the current selection. */}
+      <ContextActions />
     </div>
   );
 }
@@ -448,6 +451,9 @@ function HudMode({ seed, frozen }: { seed: number; frozen: boolean }) {
       "rocketry", "biolabs", "basic_sensors", "deep_sensors",
     ];
     g.orbitalLaunched = true; // unlock the expedition + defense panels' availability checks
+    g.sensorRange = 9000; // so surveying selected worlds is ungated in the preview
+    g.maxRange = 9000; // so flying to selected systems is ungated
+    g.stockpiles.fuel = 100000;
     // Discover systems + chart a few worlds so the Journal + Travel panels have content.
     const systems = Object.values(g.systems).sort((a, b) => a.distanceFromHome - b.distanceFromHome);
     let charted = 0;
