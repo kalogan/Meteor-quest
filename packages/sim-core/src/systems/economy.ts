@@ -23,6 +23,15 @@ const CATEGORY_OF_RESOURCE: Record<ResourceId, TechCategory> = {
   research: "administration",
 };
 
+/**
+ * Per-tick yield of a settled world's biome UNIQUE resource (cryocrystal/silicate/biogel/
+ * oremetal). This is the "explore to claim it" mechanic that lets rare resources enter the
+ * economy and ungate their tech — settling a biome world is how you obtain its rare. A flat
+ * trickle (the gate only needs > 0); the cradle is a settled rock world, so oremetal — and thus
+ * the warp/propulsion line — is available from the start without first having to travel.
+ */
+const UNIQUE_RESOURCE_YIELD = 0.5;
+
 /** raw → 1 unit consumed per 1 unit produced (mine→refine chain), from content. */
 function refinedInputOf(resource: ResourceId): ResourceId | undefined {
   const def = getContentPack().resources.find((r) => r.id === resource);
@@ -99,6 +108,16 @@ export function runEconomy(state: GameState): void {
     const res = effectiveFocus(state, city.id);
     const m = mult[CATEGORY_OF_RESOURCE[res]] ?? 1;
     rates[res] += city.productivity * m;
+  }
+
+  // 1.5 Settled worlds yield their biome's UNIQUE resource — the "explore to claim it" mechanic
+  //     that feeds rare resources into the economy and ungates their tech. The cradle (rock)
+  //     yields oremetal from tick 0, so the warp/propulsion line is reachable by research alone.
+  const pack = getContentPack();
+  for (const planet of Object.values(state.planets)) {
+    if (!planet.settled) continue;
+    const biome = pack.biomes.find((b) => b.id === planet.biome);
+    if (biome) rates[biome.uniqueResource] += UNIQUE_RESOURCE_YIELD;
   }
 
   // 2. Refined resources: gate on unlocked recipe + available raw feedstock.

@@ -3,6 +3,7 @@ import { createInitialState } from "../worldgen.js";
 import { tick, tickN } from "../engine.js";
 import { applyCommand } from "../commands.js";
 import { categoryMultipliers, effectiveFocus, runEconomy } from "./economy.js";
+import { canResearch } from "./research.js";
 import type { GameState, ResourceId } from "@meteor/shared";
 
 /** Point every city at `resource` (city-tier focus). */
@@ -18,6 +19,35 @@ describe("economy: determinism", () => {
     const b = tickN(createInitialState(99), 50);
     expect(a.stockpiles).toEqual(b.stockpiles);
     expect(a.rates).toEqual(b.rates);
+  });
+});
+
+describe("economy: settled worlds yield their biome unique resource (explore-to-claim)", () => {
+  it("the settled rock cradle produces oremetal from the start", () => {
+    const s = tickN(createInitialState(1), 5);
+    expect(s.stockpiles.oremetal).toBeGreaterThan(0);
+  });
+
+  it("a settled ice world yields cryocrystal; an unsettled one yields none", () => {
+    const base = createInitialState(1);
+    const ice = Object.values(base.planets).find((p) => p.biome === "ice");
+    expect(ice).toBeTruthy();
+    // Unsettled → no cryocrystal beyond whatever the cradle (rock) makes (which is 0).
+    expect(tickN(createInitialState(1), 5).stockpiles.cryocrystal).toBe(0);
+    // Settle it → cryocrystal starts flowing.
+    const s = structuredClone(base);
+    s.planets[ice!.id]!.settled = true;
+    expect(tickN(s, 5).stockpiles.cryocrystal).toBeGreaterThan(0);
+  });
+
+  it("breaks the bootstrap deadlock: oremetal from the cradle ungates warp_basics", () => {
+    // warp_basics requires oremetal; without the explore-to-claim yield it was unobtainable
+    // (you couldn't travel to a rock world to get oremetal). Now the cradle supplies it.
+    let s = tickN(createInitialState(1), 10);
+    expect(s.stockpiles.oremetal).toBeGreaterThan(0);
+    // Unlock the (ungated) propulsion prereqs, then warp_basics must become researchable.
+    s = { ...s, research: { ...s.research, unlocked: [...s.research.unlocked, "basic_industry", "power_grid", "refining", "rocketry", "planetary_gov", "federal_admin", "orbital_launch"] } };
+    expect(canResearch(s, "warp_basics")).toBe(true);
   });
 });
 

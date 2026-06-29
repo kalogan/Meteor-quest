@@ -52,6 +52,24 @@ _Update every slice. A cold context should be able to resume from this file._
 - FOLLOW-UP: desktop default is no panel open (clean game view) — if players want a panel pinned,
   a "keep open"/multi-pin affordance could come later. Tactical/threats top-center desktop is new.
 
+## Bootstrap-deadlock fix — settled worlds yield their unique resource — done, verified
+- BUG (player got stuck, couldn't warp far enough): rare resources (cryocrystal/silicate/biogel/
+  oremetal) were NEVER produced — `biome.uniqueResource` was only used by validation + the tech
+  gate, nothing fed it into stockpiles. So every rare-gated tech was permanently unresearchable.
+  In particular `warp_basics` (the +120 range tech, 70→190) needs oremetal, but oremetal needs
+  settling a rock world, which needs warp range to reach → DEADLOCK. (The old win-rate harness
+  wrongly assumed rares were focus-producible; FOCUSABLE_RESOURCES is commons-only.)
+- FIX (economy.ts): each SETTLED world now yields its biome's uniqueResource at a flat trickle
+  (UNIQUE_RESOURCE_YIELD 0.5/s) — the "explore to claim it" mechanic finally wired up. The cradle
+  is a settled ROCK world, so oremetal flows from tick 0 → `warp_basics` is researchable by
+  research alone → maxRange 190 reaches Vega (92) + Proxima (108–120) → settling ice/water/sand
+  there yields cryocrystal/biogel/silicate → fusion/biolabs/long-range/galactic-survey ungate.
+  No content/gate change (gates stay; the resource now actually exists). No save bump (no new
+  fields).
+- Verified: gate GREEN (124 sim tests, +3): cradle yields oremetal in 5 ticks; settling an ice
+  world yields cryocrystal (unsettled yields none); oremetal ungates warp_basics once prereqs are
+  met. Determinism + existing economy tests unaffected.
+
 ## Desktop right-rail HUD + contextual Survey/Fly/Settle actions — done, verified
 - DESKTOP RIGHT RAIL (fix: centered bar + panels covered the whole screen). The action bar is now
   a vertical RIGHT RAIL (icon-over-label, centered on the right edge); opened panels dock just to
